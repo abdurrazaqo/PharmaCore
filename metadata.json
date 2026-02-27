@@ -1,0 +1,7 @@
+{
+  "name": "PharmaCore by 365Health",
+  "description": "A comprehensive pharmacy management system featuring real-time dashboard analytics, inventory control, professional POS interface, and technical documentation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
