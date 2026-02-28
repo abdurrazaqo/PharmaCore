@@ -60,20 +60,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, onClose, on
   };
 
   return (
-    <div 
-      className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 flex items-center justify-center p-4" 
-      style={{ 
-        zIndex: 99999, 
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: '100vw',
-        height: '100vh'
-      }}
-    >
-      <div className="bg-white dark:bg-surface-dark rounded-2xl max-w-4xl w-full relative" style={{ zIndex: 100000 }}>
+    <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
+      <div className="modal-content bg-white dark:bg-surface-dark rounded-2xl max-w-4xl w-full">
         <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <h3 className="text-xl font-bold dark:text-white">Edit Medicine</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">

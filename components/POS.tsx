@@ -15,9 +15,11 @@ const POS: React.FC = () => {
   const [completedTransactionId, setCompletedTransactionId] = useState<string | null>(null);
   const [completedTransactionTotal, setCompletedTransactionTotal] = useState<number>(0);
   const [showPrintPrompt, setShowPrintPrompt] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'Transfer'>('Cash');
   const [discountPercent, setDiscountPercent] = useState(() => {
     const saved = localStorage.getItem('posDiscountPercent');
-    return saved ? Number(saved) : 10;
+    const parsed = saved ? Number(saved) : null;
+    return (parsed !== null && !isNaN(parsed) && parsed >= 0 && parsed <= 100) ? parsed : 10;
   });
   const [showDiscountEdit, setShowDiscountEdit] = useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -118,7 +120,8 @@ const POS: React.FC = () => {
           initials: selectedCustomer.initials,
           dateTime: dateTime,
           amount: saleTotal,
-          status: 'Completed' as any
+          status: 'Completed' as any,
+          paymentMethod: paymentMethod
         });
 
         // Save sales items
@@ -212,7 +215,7 @@ const POS: React.FC = () => {
       {/* Catalog */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900/20 p-4 overflow-y-auto overflow-x-hidden">
         {/* Search Bar - Always visible, with dropdown on mobile */}
-        <div className="relative mb-4 z-20" ref={searchDropdownRef}>
+        <div className="relative mb-2 lg:mb-4 z-20" ref={searchDropdownRef}>
           <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
             <span className="material-symbols-outlined">search</span>
           </span>
@@ -448,8 +451,8 @@ const POS: React.FC = () => {
       </div>
 
       {/* Cart Sidebar */}
-      <aside className="w-full lg:w-[400px] flex flex-col bg-white dark:bg-surface-dark border-l border-slate-200 dark:border-slate-800 shadow-2xl relative z-10">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+      <aside className="w-full lg:w-[400px] flex flex-col bg-white dark:bg-surface-dark border-l border-slate-200 dark:border-slate-800 shadow-2xl relative z-10 max-h-screen lg:max-h-none">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest text-xs">Customer Details</h3>
             <button 
@@ -476,13 +479,20 @@ const POS: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
           <div className="flex items-center justify-between text-slate-400 text-[10px] font-bold uppercase tracking-wider px-1">
             <span>Product</span>
             <span>Subtotal</span>
           </div>
           
-          {cart.map((item) => {
+          {cart.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <span className="material-symbols-outlined text-5xl text-slate-300 mb-2">shopping_cart</span>
+              <p className="text-sm text-slate-500">Cart is empty</p>
+              <p className="text-xs text-slate-400 mt-1">Add items to get started</p>
+            </div>
+          ) : (
+            cart.map((item) => {
             const prod = products.find(p => p.id === item.id);
             if (!prod) return null;
             return (
@@ -525,7 +535,7 @@ const POS: React.FC = () => {
                           ));
                         }
                       }}
-                      className="w-8 text-center text-xs font-bold bg-transparent border-none outline-none dark:text-white"
+                      className="w-12 min-w-[3rem] text-center text-xs font-bold bg-transparent border-none outline-none dark:text-white"
                     />
                     <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 rounded transition-colors">
                       <span className="material-symbols-outlined text-sm">add</span>
@@ -538,10 +548,11 @@ const POS: React.FC = () => {
                 </div>
               </div>
             );
-          })}
+          })
+          )}
         </div>
 
-        <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 space-y-3 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 space-y-3 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] flex-shrink-0">
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-slate-500">
               <span>Subtotal</span>
@@ -556,14 +567,56 @@ const POS: React.FC = () => {
               </button>
               <span className="text-green-600 dark:text-green-400">-₦{discount.toFixed(2)} ({discountPercent}%)</span>
             </div>
-            <div className="flex justify-between items-end pt-2">
+            <div className="flex justify-between items-end pt-2 border-t border-slate-200 dark:border-slate-700">
               <span className="font-bold text-lg">Total</span>
               <span className="font-extrabold text-3xl text-primary">₦{total.toFixed(2)}</span>
             </div>
           </div>
+          
+          {/* Payment Method Selector */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Payment Method</label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => setPaymentMethod('Cash')}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  paymentMethod === 'Cash'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary'
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm block mb-0.5">payments</span>
+                Cash
+              </button>
+              <button
+                onClick={() => setPaymentMethod('Card')}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  paymentMethod === 'Card'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary'
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm block mb-0.5">credit_card</span>
+                Card
+              </button>
+              <button
+                onClick={() => setPaymentMethod('Transfer')}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  paymentMethod === 'Transfer'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary'
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm block mb-0.5">swap_horiz</span>
+                Transfer
+              </button>
+            </div>
+          </div>
+          
           <button 
             onClick={handleCompleteSale}
-            className="w-full bg-primary hover:bg-primary/90 text-white py-5 rounded-2xl text-xl font-bold shadow-xl shadow-primary/20 transition-transform active:scale-95 flex items-center justify-center gap-3"
+            disabled={cart.length === 0}
+            className="w-full bg-primary hover:bg-primary/90 text-white py-4 lg:py-5 rounded-2xl text-lg lg:text-xl font-bold shadow-xl shadow-primary/20 transition-transform active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined">shopping_cart_checkout</span>
             Complete Sale
@@ -573,8 +626,8 @@ const POS: React.FC = () => {
 
       {/* Print Prompt Modal */}
       {showPrintPrompt && completedTransactionId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-surface-dark p-8 rounded-xl max-w-md mx-4">
+        <div className="modal-overlay bg-black/50 flex items-center justify-center">
+          <div className="modal-content bg-white dark:bg-surface-dark p-8 rounded-xl max-w-md mx-4">
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-4xl">check_circle</span>
@@ -612,8 +665,8 @@ const POS: React.FC = () => {
 
       {/* Discount Edit Modal */}
       {showDiscountEdit && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-surface-dark p-6 rounded-xl max-w-sm mx-4 w-full">
+        <div className="modal-overlay bg-black/50 flex items-center justify-center">
+          <div className="modal-content bg-white dark:bg-surface-dark p-6 rounded-xl max-w-sm mx-4 w-full">
             <h3 className="text-lg font-bold mb-4 dark:text-white">Edit Discount</h3>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2 dark:text-slate-300">Discount Percentage</label>

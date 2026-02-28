@@ -12,6 +12,7 @@ export interface Transaction {
   dateTime: string;
   amount: number;
   status: TransactionStatus;
+  paymentMethod?: string;
 }
 
 export interface Product {

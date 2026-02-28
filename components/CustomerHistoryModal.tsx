@@ -117,8 +117,8 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({ isOpen, onC
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' }}>
-        <div className="bg-white dark:bg-surface-dark rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col relative z-[100000]">
+      <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
+        <div className="modal-content bg-white dark:bg-surface-dark rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <div>
@@ -236,8 +236,8 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({ isOpen, onC
 
       {/* View Details Modal */}
       {viewDetailsTransactionId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100001] p-4">
-          <div className="bg-white dark:bg-surface-dark rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
+          <div className="modal-content bg-white dark:bg-surface-dark rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <div>

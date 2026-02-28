@@ -56,7 +56,7 @@ export const getTransactionForReceipt = async (transactionId: string): Promise<R
       discount,
       vat,
       total: transaction.amount,
-      paymentMethod: 'Cash', // Add this field to transactions table if needed
+      paymentMethod: transaction.payment_method || 'Cash',
       amountPaid: transaction.amount,
       change: 0
     };

@@ -35,9 +35,8 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
       >
         {/* Header */}
         <div className="text-center mb-4 break-inside-avoid">
-          <div className="flex justify-center mb-1">
-            <Logo size="md" className="text-black" />
-          </div>
+          <div className="font-bold text-lg mb-1">Main Pharmacy</div>
+          <div className="text-xs mb-2">Terminal #01</div>
           <div className="text-xs">123 Medical Plaza, Lagos</div>
           <div className="text-xs">Tel: +234 800 123 4567</div>
         </div>
@@ -133,7 +132,8 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         {/* Footer */}
         <div className="text-center text-xs break-inside-avoid">
           <div className="mb-2">Thank you for your patronage!</div>
-          <div className="mb-2">Get well soon</div>
+          <div className="mb-3">Get well soon</div>
+          <div className="text-[10px] opacity-60 mb-1">Powered by</div>
           <div className="flex justify-center">
             <Logo size="sm" className="text-black opacity-70" />
           </div>

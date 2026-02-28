@@ -167,8 +167,8 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
   }, 0);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+    <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
+      <div className="modal-content bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>

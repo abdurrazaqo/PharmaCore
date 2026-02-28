@@ -15,8 +15,10 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [chartPeriod, setChartPeriod] = useState<'Week' | 'Month'>('Week');
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<any[]>([]);
   const [salesTrendData, setSalesTrendData] = useState<any[]>([]);
   const [todayPerformance, setTodayPerformance] = useState<string>('');
+  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days' | 'all'>('all');
   const [stats, setStats] = useState({
     totalSales: 0,
     monthlyRevenue: 0,
@@ -38,6 +40,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   useEffect(() => {
     loadChartData();
   }, [chartPeriod]);
+
+  useEffect(() => {
+    filterTransactions();
+  }, [transactions, dateRange]);
+
+  const filterTransactions = () => {
+    let filtered = [...transactions];
+
+    if (dateRange !== 'all') {
+      const now = new Date();
+      const startDate = new Date();
+      
+      if (dateRange === 'today') {
+        startDate.setHours(0, 0, 0, 0);
+      } else if (dateRange === '7days') {
+        startDate.setDate(now.getDate() - 7);
+      } else if (dateRange === '30days') {
+        startDate.setDate(now.getDate() - 30);
+      }
+
+      filtered = filtered.filter(tx => {
+        const txDate = new Date(tx.createdAt || tx.dateTime);
+        return txDate >= startDate;
+      });
+    }
+
+    setFilteredTransactions(filtered);
+  };
 
   const loadChartData = async () => {
     try {
@@ -315,17 +345,42 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Recent Transactions Table */}
       <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold dark:text-white">Recent Transactions</h3>
-            <p className="text-sm text-slate-500">List of latest pharmacy sales and orders</p>
+        <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-bold dark:text-white">Recent Transactions</h3>
+              <p className="text-xs lg:text-sm text-slate-500">List of latest pharmacy sales and orders</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Date Range Filter */}
+              <div className="flex gap-1">
+                {[
+                  { value: 'today', label: 'Today' },
+                  { value: '7days', label: '7D' },
+                  { value: '30days', label: '30D' },
+                  { value: 'all', label: 'All' }
+                ].map((range) => (
+                  <button
+                    key={range.value}
+                    onClick={() => setDateRange(range.value as any)}
+                    className={`px-2 lg:px-3 py-1 text-[10px] lg:text-xs font-medium rounded-lg transition-colors ${
+                      dateRange === range.value
+                        ? 'bg-primary text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+              <button 
+                onClick={handleViewAllTransactions}
+                className="text-primary text-xs lg:text-sm font-semibold hover:underline whitespace-nowrap"
+              >
+                View All
+              </button>
+            </div>
           </div>
-          <button 
-            onClick={handleViewAllTransactions}
-            className="text-primary text-sm font-semibold hover:underline"
-          >
-            View All
-          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -335,6 +390,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <th className="px-6 py-4 hidden lg:table-cell">Customer</th>
                 <th className="px-3 lg:px-6 py-4">Date & Time</th>
                 <th className="px-3 lg:px-6 py-4">Amount</th>
+                <th className="px-3 lg:px-6 py-4">Payment</th>
                 <th className="px-6 py-4 hidden lg:table-cell">Status</th>
                 <th className="px-3 lg:px-6 py-4 text-right">Actions</th>
               </tr>
@@ -342,18 +398,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
                     Loading transactions...
                   </td>
                 </tr>
-              ) : transactions.length === 0 ? (
+              ) : filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
                     No transactions found
                   </td>
                 </tr>
               ) : (
-                transactions.map((tx) => (
+                filteredTransactions.map((tx) => {
+                  // Parse date and time
+                  const dateTimeParts = tx.dateTime.split(' at ');
+                  const datePart = dateTimeParts[0] || tx.dateTime;
+                  const timePart = dateTimeParts[1] || '';
+                  
+                  return (
                 <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
                   <td className="px-3 lg:px-6 py-4 font-mono text-xs lg:text-sm dark:text-slate-300">{tx.id}</td>
                   <td className="px-6 py-4 hidden lg:table-cell">
@@ -362,8 +424,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       <span className="text-sm font-medium dark:text-white">{tx.customer}</span>
                     </div>
                   </td>
-                  <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-slate-500">{tx.dateTime}</td>
+                  <td className="px-3 lg:px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium dark:text-white">{datePart}</span>
+                      {timePart && <span className="text-[10px] text-slate-500">{timePart}</span>}
+                    </div>
+                  </td>
                   <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-bold dark:text-white">₦{tx.amount.toFixed(2)}</td>
+                  <td className="px-3 lg:px-6 py-4">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+                      tx.paymentMethod === 'Cash' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                      tx.paymentMethod === 'Card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                      tx.paymentMethod === 'Transfer' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                      'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                    }`}>
+                      <span className="material-symbols-outlined text-xs">
+                        {tx.paymentMethod === 'Cash' ? 'payments' : tx.paymentMethod === 'Card' ? 'credit_card' : tx.paymentMethod === 'Transfer' ? 'swap_horiz' : 'help'}
+                      </span>
+                      {tx.paymentMethod || 'Cash'}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 hidden lg:table-cell">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       tx.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400' :
@@ -394,7 +474,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </div>
                   </td>
                 </tr>
-              )))}
+              );
+            }))}
             </tbody>
           </table>
         </div>

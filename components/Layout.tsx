@@ -99,7 +99,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* Mobile Header */}
-        <header className="h-14 lg:h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-surface-dark flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <header className="h-14 lg:h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-surface-dark flex items-center justify-between px-4 lg:px-8 sticky top-0" style={{ paddingTop: 'env(safe-area-inset-top)', position: 'sticky', zIndex: 10 }}>
           <div className="flex items-center gap-3">
             {/* Mobile Menu Button */}
             <button 
@@ -182,7 +182,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-dark border-t border-slate-200 dark:border-slate-800 z-40 safe-area-bottom">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-dark border-t border-slate-200 dark:border-slate-800 z-10 safe-area-bottom">
         <div className="flex items-center justify-around h-16" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           {navItems.map((item) => (
             <button
@@ -208,10 +208,19 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
       {isMenuOpen && (
         <>
           <div 
-            className="lg:hidden fixed inset-0 bg-black/50 z-50 animate-in fade-in duration-200"
+            className="lg:hidden fixed bg-black/50 z-30 animate-in fade-in duration-200"
+            style={{ 
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh'
+            }}
             onClick={() => setIsMenuOpen(false)}
           />
-          <div className="lg:hidden fixed top-0 left-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-surface-dark z-50 animate-in slide-in-from-left duration-300 flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <div className="lg:hidden fixed top-0 left-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-surface-dark z-30 animate-in slide-in-from-left duration-300 flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             <div className="p-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
               <Logo size="md" />
               <button 

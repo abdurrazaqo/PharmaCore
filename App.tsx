@@ -67,12 +67,21 @@ const App: React.FC = () => {
         onToggleAi={() => setIsAiOpen(!isAiOpen)}
         aiContent={
         <div className="flex flex-col h-full">
-          <div className="bg-primary p-5 text-white">
-            <h3 className="font-bold flex items-center gap-2">
-              <span className="material-symbols-outlined text-xl">smart_toy</span>
-              PharmaCore AI Consult
-            </h3>
-            <p className="text-[10px] opacity-70 mt-1 uppercase tracking-widest font-bold">Safe Interaction Guard • Gemini 3</p>
+          <div className="bg-primary p-5 text-white flex items-center justify-between">
+            <div>
+              <h3 className="font-bold flex items-center gap-2">
+                <span className="material-symbols-outlined text-xl">smart_toy</span>
+                PharmaCore AI Consult
+              </h3>
+              <p className="text-[10px] opacity-70 mt-1 uppercase tracking-widest font-bold">Safe Interaction Guard • Gemini 3</p>
+            </div>
+            <button 
+              onClick={() => setIsAiOpen(false)}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              title="Close AI Assistant"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
           </div>
           
           <div className="flex-1 overflow-y-auto p-5 bg-slate-50 dark:bg-slate-900/50">
