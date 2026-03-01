@@ -215,7 +215,7 @@ const POS: React.FC = () => {
       {/* Catalog */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900/20 p-4 overflow-y-auto overflow-x-hidden">
         {/* Search Bar - Always visible, with dropdown on mobile */}
-        <div className="relative mb-2 lg:mb-4 z-20" ref={searchDropdownRef}>
+        <div className="relative mb-2 lg:mb-4 z-30" ref={searchDropdownRef}>
           <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
             <span className="material-symbols-outlined">search</span>
           </span>
@@ -243,7 +243,7 @@ const POS: React.FC = () => {
 
           {/* Mobile Search Results Dropdown */}
           {showSearchDropdown && filteredProducts.length > 0 && (
-            <div className="lg:hidden fixed left-4 right-4 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-[60vh] overflow-y-auto">
+            <div className="lg:hidden fixed left-4 right-4 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-[60vh] overflow-y-auto z-50">
               {filteredProducts.slice(0, 10).map((prod) => {
                 const inCart = cart.find(c => c.id === prod.id);
                 const isOutOfStock = prod.totalUnits === 0;
@@ -309,7 +309,7 @@ const POS: React.FC = () => {
           )}
 
           {showSearchDropdown && searchTerm && filteredProducts.length === 0 && (
-            <div className="lg:hidden fixed left-4 right-4 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-6 text-center">
+            <div className="lg:hidden fixed left-4 right-4 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-6 text-center z-50">
               <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">search_off</span>
               <p className="text-sm text-slate-500">No medicines found</p>
               <p className="text-xs text-slate-400 mt-1">Try a different search term</p>
