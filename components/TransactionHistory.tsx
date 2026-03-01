@@ -153,79 +153,127 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ onClose }) => {
                 </div>
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs font-bold uppercase tracking-widest sticky top-0">
-                  <tr>
-                    <th className="px-3 lg:px-6 py-3 text-left">Invoice ID</th>
-                    <th className="px-6 py-3 text-left hidden lg:table-cell">Customer</th>
-                    <th className="px-3 lg:px-6 py-3 text-left">Date & Time</th>
-                    <th className="px-3 lg:px-6 py-3 text-left">Amount</th>
-                    <th className="px-3 lg:px-6 py-3 text-left">Payment</th>
-                    <th className="px-3 lg:px-6 py-3 text-left hidden lg:table-cell">Status</th>
-                    <th className="px-3 lg:px-6 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <>
+                {/* Mobile Card View */}
+                <div className="lg:hidden p-4 space-y-3">
                   {paginatedTransactions.map((tx) => {
-                    // Parse date and time
                     const dateTimeParts = tx.dateTime.split(' at ');
                     const datePart = dateTimeParts[0] || tx.dateTime;
                     const timePart = dateTimeParts[1] || '';
                     
                     return (
-                    <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="px-3 lg:px-6 py-3 font-mono text-xs lg:text-sm dark:text-slate-300">{tx.id}</td>
-                      <td className="px-6 py-3 hidden lg:table-cell">
-                        <div className="flex items-center gap-3">
-                          <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold">
-                            {tx.initials}
+                      <div key={tx.id} className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <p className="font-mono text-xs text-slate-500 mb-1">{tx.id}</p>
+                            <p className="font-bold text-lg dark:text-white">₦{tx.amount.toFixed(2)}</p>
                           </div>
-                          <span className="text-sm font-medium dark:text-white">{tx.customer}</span>
+                          <button
+                            onClick={() => setPrintTransactionId(tx.id)}
+                            className="p-2 text-slate-400 hover:text-primary transition-colors"
+                            title="Print Receipt"
+                          >
+                            <span className="material-symbols-outlined">print</span>
+                          </button>
                         </div>
-                      </td>
-                      <td className="px-3 lg:px-6 py-3">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-medium dark:text-white">{datePart}</span>
-                          {timePart && <span className="text-[10px] text-slate-500">{timePart}</span>}
-                        </div>
-                      </td>
-                      <td className="px-3 lg:px-6 py-3 text-xs lg:text-sm font-bold dark:text-white">₦{tx.amount.toFixed(2)}</td>
-                      <td className="px-3 lg:px-6 py-3">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
-                          tx.paymentMethod === 'Cash' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                          tx.paymentMethod === 'Card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                          tx.paymentMethod === 'Transfer' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                          'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
-                        }`}>
-                          <span className="material-symbols-outlined text-xs">
-                            {tx.paymentMethod === 'Cash' ? 'payments' : tx.paymentMethod === 'Card' ? 'credit_card' : tx.paymentMethod === 'Transfer' ? 'swap_horiz' : 'help'}
+                        
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex flex-col">
+                            <span className="font-medium dark:text-white">{datePart}</span>
+                            {timePart && <span className="text-slate-500">{timePart}</span>}
+                          </div>
+                          
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+                            tx.paymentMethod === 'Cash' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                            tx.paymentMethod === 'Card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                            tx.paymentMethod === 'Transfer' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                            'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                          }`}>
+                            <span className="material-symbols-outlined text-xs">
+                              {tx.paymentMethod === 'Cash' ? 'payments' : tx.paymentMethod === 'Card' ? 'credit_card' : tx.paymentMethod === 'Transfer' ? 'swap_horiz' : 'help'}
+                            </span>
+                            {tx.paymentMethod || 'Cash'}
                           </span>
-                          <span className="hidden lg:inline">{tx.paymentMethod || 'Cash'}</span>
-                        </span>
-                      </td>
-                      <td className="px-3 lg:px-6 py-3 hidden lg:table-cell">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          tx.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400' :
-                          tx.status === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-400' :
-                          'bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400'
-                        }`}>
-                          {tx.status}
-                        </span>
-                      </td>
-                      <td className="px-3 lg:px-6 py-3 text-right">
-                        <button
-                          onClick={() => setPrintTransactionId(tx.id)}
-                          className="text-slate-400 hover:text-primary transition-colors"
-                          title="Print Receipt"
-                        >
-                          <span className="material-symbols-outlined text-lg lg:text-xl">print</span>
-                        </button>
-                      </td>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop Table View */}
+                <table className="w-full hidden lg:table">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs font-bold uppercase tracking-widest sticky top-0">
+                    <tr>
+                      <th className="px-6 py-3 text-left">Invoice ID</th>
+                      <th className="px-6 py-3 text-left">Customer</th>
+                      <th className="px-6 py-3 text-left">Date & Time</th>
+                      <th className="px-6 py-3 text-left">Amount</th>
+                      <th className="px-6 py-3 text-left">Payment</th>
+                      <th className="px-6 py-3 text-left">Status</th>
+                      <th className="px-6 py-3 text-right">Actions</th>
                     </tr>
-                  );
-                })}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {paginatedTransactions.map((tx) => {
+                      const dateTimeParts = tx.dateTime.split(' at ');
+                      const datePart = dateTimeParts[0] || tx.dateTime;
+                      const timePart = dateTimeParts[1] || '';
+                      
+                      return (
+                        <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                          <td className="px-6 py-3 font-mono text-sm dark:text-slate-300">{tx.id}</td>
+                          <td className="px-6 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold">
+                                {tx.initials}
+                              </div>
+                              <span className="text-sm font-medium dark:text-white">{tx.customer}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-medium dark:text-white">{datePart}</span>
+                              {timePart && <span className="text-[10px] text-slate-500">{timePart}</span>}
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 text-sm font-bold dark:text-white">₦{tx.amount.toFixed(2)}</td>
+                          <td className="px-6 py-3">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+                              tx.paymentMethod === 'Cash' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                              tx.paymentMethod === 'Card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                              tx.paymentMethod === 'Transfer' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                              'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                            }`}>
+                              <span className="material-symbols-outlined text-xs">
+                                {tx.paymentMethod === 'Cash' ? 'payments' : tx.paymentMethod === 'Card' ? 'credit_card' : tx.paymentMethod === 'Transfer' ? 'swap_horiz' : 'help'}
+                              </span>
+                              {tx.paymentMethod || 'Cash'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              tx.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400' :
+                              tx.status === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-400' :
+                              'bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400'
+                            }`}>
+                              {tx.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <button
+                              onClick={() => setPrintTransactionId(tx.id)}
+                              className="text-slate-400 hover:text-primary transition-colors"
+                              title="Print Receipt"
+                            >
+                              <span className="material-symbols-outlined text-xl">print</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </>
             )}
           </div>
 
@@ -278,7 +326,6 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ onClose }) => {
               </div>
             </div>
           )}
-          </div>
         </div>
       </div>
 
