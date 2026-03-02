@@ -213,9 +213,9 @@ const POS: React.FC = () => {
   return (
     <div className="flex h-full overflow-hidden flex-col lg:flex-row animate-in zoom-in-95 duration-300">
       {/* Catalog */}
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900/20 p-4 overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900/20 p-4 overflow-y-auto overflow-x-hidden relative">
         {/* Search Bar - Always visible, with dropdown on mobile */}
-        <div className="relative mb-2 lg:mb-4 z-30" ref={searchDropdownRef}>
+        <div className="relative mb-2 lg:mb-4 z-50" ref={searchDropdownRef}>
           <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
             <span className="material-symbols-outlined">search</span>
           </span>
@@ -243,7 +243,7 @@ const POS: React.FC = () => {
 
           {/* Mobile Search Results Dropdown */}
           {showSearchDropdown && filteredProducts.length > 0 && (
-            <div className="lg:hidden fixed left-4 right-4 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-[60vh] overflow-y-auto z-50">
+            <div className="lg:hidden absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-[60vh] overflow-y-auto z-[100]">
               {filteredProducts.slice(0, 10).map((prod) => {
                 const inCart = cart.find(c => c.id === prod.id);
                 const isOutOfStock = prod.totalUnits === 0;
@@ -309,7 +309,7 @@ const POS: React.FC = () => {
           )}
 
           {showSearchDropdown && searchTerm && filteredProducts.length === 0 && (
-            <div className="lg:hidden fixed left-4 right-4 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-6 text-center z-50">
+            <div className="lg:hidden absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-6 text-center z-[100]">
               <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">search_off</span>
               <p className="text-sm text-slate-500">No medicines found</p>
               <p className="text-xs text-slate-400 mt-1">Try a different search term</p>
@@ -451,7 +451,7 @@ const POS: React.FC = () => {
       </div>
 
       {/* Cart Sidebar */}
-      <aside className="w-full lg:w-[400px] flex flex-col bg-white dark:bg-surface-dark border-l border-slate-200 dark:border-slate-800 shadow-2xl relative z-10 max-h-screen lg:max-h-none">
+      <aside className="w-full lg:w-[400px] flex flex-col bg-white dark:bg-surface-dark border-l border-slate-200 dark:border-slate-800 shadow-2xl relative z-20 max-h-screen lg:max-h-none">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest text-xs">Customer Details</h3>
