@@ -119,16 +119,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log('📊 Dashboard: Loading data from database...');
       
-      const [txData, statsData, trendData] = await Promise.all([
-        getTransactions(4),
+      // Load critical data first (stats and trend), then transactions
+      const [statsData, trendData] = await Promise.all([
         getDashboardStats(),
         getWeeklySalesTrend()
       ]);
       
-      setTransactions(txData);
+      // Update UI immediately with critical data
       setStats(statsData);
       setSalesTrendData(trendData);
+      setLoading(false); // Stop loading spinner early
+      
+      console.log('✅ Dashboard: Critical data loaded');
+      
+      // Load transactions in background
+      const txData = await getTransactions(4);
+      setTransactions(txData);
+      
+      console.log('✅ Dashboard: All data loaded');
+      console.log('Transactions:', txData);
+      console.log('Stats:', statsData);
+      console.log('Trend:', trendData);
       
       // Calculate today's sales change vs yesterday
       if (trendData.length >= 2) {
@@ -187,7 +200,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         setTodayPerformance('Insufficient data for comparison');
       }
     } catch (error) {
-      console.error('Dashboard: Failed to load data from database:', error);
+      console.error('❌ Dashboard: Failed to load data from database:', error);
+      console.error('Error details:', error);
       // Set empty data but keep existing stats to avoid flash
       setTransactions([]);
       setSalesTrendData([]);
@@ -219,7 +233,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     <div className="p-4 max-w-[1400px] mx-auto space-y-4 animate-in fade-in duration-500">
       {/* KPI Section */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {[
+        {loading ? (
+          // Skeleton loader for KPIs
+          Array.from({ length: 5 }).map((_, idx) => (
+            <div key={idx} className={`bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800 animate-pulse ${
+              idx >= 2 ? 'hidden lg:block' : ''
+            }`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-6 h-6 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                <div className="w-12 h-4 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+              </div>
+              <div className="w-20 h-3 bg-slate-200 dark:bg-slate-700 rounded mb-2"></div>
+              <div className="w-24 h-8 bg-slate-200 dark:bg-slate-700 rounded"></div>
+            </div>
+          ))
+        ) : (
+          [
           { label: 'Total Sales (Today)', value: `₦${stats.totalSales.toFixed(2)}`, icon: 'analytics', change: todaySalesChange || 'N/A', type: todaySalesChange.startsWith('+') ? 'success' : todaySalesChange.startsWith('-') ? 'danger' : 'info', hideOnMobile: false },
           { label: 'Revenue (Month)', value: `₦${stats.monthlyRevenue.toFixed(2)}`, icon: 'payments', change: monthlyRevenueChange || 'N/A', type: monthlyRevenueChange.startsWith('+') ? 'success' : monthlyRevenueChange.startsWith('-') ? 'danger' : 'info', hideOnMobile: false },
           { label: 'Profit Margin', value: `${stats.profitMargin.toFixed(1)}%`, icon: 'trending_up', change: 'Steady', type: 'info', hideOnMobile: true },
@@ -251,7 +280,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               kpi.type === 'warning' ? 'text-orange-500' : 'dark:text-white'
             }`}>{kpi.value}</h3>
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {/* Chart and Quick Actions */}
@@ -278,6 +308,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
           <div className="h-64">
+            {loading ? (
+              // Skeleton loader for chart
+              <div className="w-full h-full flex items-end justify-around gap-2 px-4 pb-8">
+                {Array.from({ length: 7 }).map((_, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-t animate-pulse"
+                    style={{ height: `${30 + Math.random() * 70}%` }}
+                  ></div>
+                ))}
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salesTrendData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
@@ -289,6 +331,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            )}
           </div>
           {todayPerformance && (
             <div className="flex justify-between mt-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest px-2">
@@ -389,12 +432,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                    Loading transactions...
-                  </td>
-                </tr>
+              {transactions.length === 0 && loading ? (
+                // Skeleton loader for initial load
+                Array.from({ length: 3 }).map((_, idx) => (
+                  <tr key={idx} className="animate-pulse">
+                    <td className="px-3 lg:px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24"></div></td>
+                    <td className="px-6 py-4 hidden lg:table-cell"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div></td>
+                    <td className="px-3 lg:px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-20"></div></td>
+                    <td className="px-3 lg:px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-16"></div></td>
+                    <td className="px-3 lg:px-6 py-4"><div className="h-6 bg-slate-200 dark:bg-slate-700 rounded-full w-16"></div></td>
+                    <td className="px-6 py-4 hidden lg:table-cell"><div className="h-6 bg-slate-200 dark:bg-slate-700 rounded-full w-20"></div></td>
+                    <td className="px-3 lg:px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-12 ml-auto"></div></td>
+                  </tr>
+                ))
               ) : filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-8 text-center text-slate-500">

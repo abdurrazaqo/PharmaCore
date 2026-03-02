@@ -34,8 +34,10 @@ const toSnakeCase = (obj: any): any => {
 // Check if database is available
 const checkDatabase = () => {
   if (!isSupabaseConfigured()) {
+    console.error('❌ Database: Supabase not configured');
     throw new Error('Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local');
   }
+  console.log('✅ Database: Supabase configured and ready');
 };
 
 // Generate next sequential invoice ID
@@ -313,105 +315,76 @@ export const getWeeklySalesTrend = async () => {
   return weekData;
 };
 
-// Dashboard Stats
+// Dashboard Stats - Optimized with parallel queries
 export const getDashboardStats = async () => {
   checkDatabase();
   
-  // Get today's sales
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const thirtyDaysFromNow = new Date();
+  thirtyDaysFromNow.setDate(today.getDate() + 30);
   
-  const { data: todaySales, error: salesError } = await supabase!
-    .from('transactions')
-    .select('amount')
-    .gte('created_at', today.toISOString())
-    .eq('status', 'Completed');
+  // Execute all queries in parallel for better performance
+  const [
+    { data: todaySales, error: salesError },
+    { data: monthSales, error: monthError },
+    { data: allProducts, error: productsError }
+  ] = await Promise.all([
+    supabase!
+      .from('transactions')
+      .select('amount')
+      .gte('created_at', today.toISOString())
+      .eq('status', 'Completed'),
+    supabase!
+      .from('transactions')
+      .select('amount')
+      .gte('created_at', firstDayOfMonth.toISOString())
+      .eq('status', 'Completed'),
+    supabase!
+      .from('products')
+      .select('price, total_units, cost_price, last_restock_quantity, expiry_date')
+  ]);
   
   if (salesError) throw salesError;
-  
-  const totalSales = todaySales?.reduce((sum, t) => sum + t.amount, 0) || 0;
-  
-  // Get this month's revenue
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const { data: monthSales, error: monthError } = await supabase!
-    .from('transactions')
-    .select('amount')
-    .gte('created_at', firstDayOfMonth.toISOString())
-    .eq('status', 'Completed');
-  
   if (monthError) throw monthError;
-  
-  const monthlyRevenue = monthSales?.reduce((sum, t) => sum + t.amount, 0) || 0;
-  
-  // Calculate actual profit margin from products
-  // Get all products and calculate average margin
-  const { data: products, error: productsError } = await supabase!
-    .from('products')
-    .select('price, total_units, cost_price');
-  
   if (productsError) throw productsError;
   
-  // Get low stock count (25% or less remaining)
-  const { data: allProducts, error: allProductsError } = await supabase!
-    .from('products')
-    .select('total_units, last_restock_quantity');
+  const totalSales = todaySales?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  const monthlyRevenue = monthSales?.reduce((sum, t) => sum + t.amount, 0) || 0;
   
-  if (allProductsError) throw allProductsError;
-  
+  // Calculate low stock count (25% or less remaining)
   const lowStockCount = allProducts?.filter(p => {
     const percentageRemaining = (p.total_units / p.last_restock_quantity) * 100;
     return percentageRemaining <= 25;
   }).length || 0;
   
-  // Get expiring soon count (within 30 days)
-  const { data: expiryProducts, error: expiryError } = await supabase!
-    .from('products')
-    .select('expiry_date');
-  
-  if (expiryError) throw expiryError;
-  
-  const thirtyDaysFromNow = new Date();
-  thirtyDaysFromNow.setDate(today.getDate() + 30);
-  
-  const expiringSoon = expiryProducts?.filter(p => {
+  // Calculate expiring soon count (within 30 days)
+  const expiringSoon = allProducts?.filter(p => {
     const expiryDate = new Date(p.expiry_date);
     return expiryDate <= thirtyDaysFromNow && expiryDate >= today;
   }).length || 0;
   
-  // If no products, return 0% margin
-  if (!products || products.length === 0) {
+  // Calculate profit margin from inventory
+  if (!allProducts || allProducts.length === 0 || monthlyRevenue === 0) {
     return {
       totalSales,
       monthlyRevenue,
       profitMargin: 0,
-      lowStockCount: lowStockCount || 0,
+      lowStockCount,
       expiringSoon
     };
   }
   
-  // Calculate profit margin from actual sales this month
-  // If no sales, return 0% margin
-  if (monthlyRevenue === 0) {
-    return {
-      totalSales,
-      monthlyRevenue,
-      profitMargin: 0,
-      lowStockCount: lowStockCount || 0,
-      expiringSoon
-    };
-  }
-  
-  // Calculate actual profit margin from inventory
-  // Total revenue potential vs total cost
-  const totalRevenue = products.reduce((sum, p) => sum + (p.price * p.total_units), 0);
-  const totalCost = products.reduce((sum, p) => sum + ((p.cost_price || p.price * 0.755) * p.total_units), 0);
+  const totalRevenue = allProducts.reduce((sum, p) => sum + (p.price * p.total_units), 0);
+  const totalCost = allProducts.reduce((sum, p) => sum + ((p.cost_price || p.price * 0.755) * p.total_units), 0);
   const profitMargin = totalRevenue > 0 ? (((totalRevenue - totalCost) / totalRevenue) * 100) : 0;
   
   return {
     totalSales,
     monthlyRevenue,
-    profitMargin: Math.round(profitMargin * 10) / 10, // Round to 1 decimal
-    lowStockCount: lowStockCount || 0,
+    profitMargin: Math.round(profitMargin * 10) / 10,
+    lowStockCount,
     expiringSoon
   };
 };
