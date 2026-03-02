@@ -262,4 +262,5 @@ For support, contact: hello@365health.online
 *Infrastructure for modern healthcare operations*
 #   P h a r m a C o r e 
  
+ #   D e p l o y m e n t   t r i g g e r  
  
