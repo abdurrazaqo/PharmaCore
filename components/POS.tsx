@@ -29,6 +29,19 @@ const POS: React.FC = () => {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const { showToast } = useToast();
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+
+  // Update dropdown position when search input changes
+  useEffect(() => {
+    if (showSearchDropdown && searchInputRef.current) {
+      const rect = searchInputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  }, [showSearchDropdown]);
 
   // Save discount to localStorage whenever it changes
   useEffect(() => {
@@ -42,7 +55,8 @@ const POS: React.FC = () => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchDropdownRef.current && !searchDropdownRef.current.contains(event.target as Node)) {
+      if (searchDropdownRef.current && !searchDropdownRef.current.contains(event.target as Node) &&
+          searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
         setShowSearchDropdown(false);
       }
     };
@@ -215,7 +229,7 @@ const POS: React.FC = () => {
       {/* Catalog */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900/20 p-4 overflow-y-auto overflow-x-hidden relative">
         {/* Search Bar - Always visible, with dropdown on mobile */}
-        <div className="relative mb-2 lg:mb-4 z-50" ref={searchDropdownRef}>
+        <div className="relative mb-2 lg:mb-4" ref={searchDropdownRef}>
           <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
             <span className="material-symbols-outlined">search</span>
           </span>
@@ -241,9 +255,16 @@ const POS: React.FC = () => {
             </button>
           </div>
 
-          {/* Mobile Search Results Dropdown */}
+          {/* Mobile Search Results Dropdown - Fixed positioning */}
           {showSearchDropdown && filteredProducts.length > 0 && (
-            <div className="lg:hidden absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-[60vh] overflow-y-auto z-[100]">
+            <div 
+              className="lg:hidden fixed bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-[50vh] overflow-y-auto z-[9999]"
+              style={{
+                top: `${dropdownPosition.top + 8}px`,
+                left: `${dropdownPosition.left}px`,
+                width: `${dropdownPosition.width}px`
+              }}
+            >
               {filteredProducts.slice(0, 10).map((prod) => {
                 const inCart = cart.find(c => c.id === prod.id);
                 const isOutOfStock = prod.totalUnits === 0;
@@ -309,7 +330,14 @@ const POS: React.FC = () => {
           )}
 
           {showSearchDropdown && searchTerm && filteredProducts.length === 0 && (
-            <div className="lg:hidden absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-6 text-center z-[100]">
+            <div 
+              className="lg:hidden fixed bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-6 text-center z-[9999]"
+              style={{
+                top: `${dropdownPosition.top + 8}px`,
+                left: `${dropdownPosition.left}px`,
+                width: `${dropdownPosition.width}px`
+              }}
+            >
               <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">search_off</span>
               <p className="text-sm text-slate-500">No medicines found</p>
               <p className="text-xs text-slate-400 mt-1">Try a different search term</p>
