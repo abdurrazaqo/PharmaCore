@@ -18,17 +18,6 @@ const App: React.FC = () => {
   const [aiResponse, setAiResponse] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Debug: Log when component mounts
-  useEffect(() => {
-    console.log('PharmaCore App mounted successfully!');
-    console.log('React is working!');
-  }, []);
-
-  // Debug: Log page changes
-  useEffect(() => {
-    console.log('Active page changed to:', activePage);
-  }, [activePage]);
-
   const handleAskAi = async () => {
     if (!query.trim()) return;
     setLoading(true);

@@ -34,10 +34,8 @@ const toSnakeCase = (obj: any): any => {
 // Check if database is available
 const checkDatabase = () => {
   if (!isSupabaseConfigured()) {
-    console.error('❌ Database: Supabase not configured');
     throw new Error('Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local');
   }
-  console.log('✅ Database: Supabase configured and ready');
 };
 
 // Generate next sequential invoice ID

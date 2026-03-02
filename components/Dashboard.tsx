@@ -119,18 +119,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log('📊 Dashboard: Loading data from database...');
       
       const [txData, statsData, trendData] = await Promise.all([
         getTransactions(4),
         getDashboardStats(),
         getWeeklySalesTrend()
       ]);
-      
-      console.log('✅ Dashboard: Data loaded successfully');
-      console.log('Transactions:', txData);
-      console.log('Stats:', statsData);
-      console.log('Trend:', trendData);
       
       setTransactions(txData);
       setStats(statsData);
@@ -193,8 +187,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         setTodayPerformance('Insufficient data for comparison');
       }
     } catch (error) {
-      console.error('❌ Dashboard: Failed to load data from database:', error);
-      console.error('Error details:', error);
+      console.error('Dashboard: Failed to load data from database:', error);
       // Set empty data but keep existing stats to avoid flash
       setTransactions([]);
       setSalesTrendData([]);
