@@ -3,7 +3,15 @@ import { GoogleGenAI } from "@google/genai";
 
 export async function* getMedicalAssistanceStream(prompt: string) {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+    
+    if (!apiKey) {
+      console.error('Gemini API key not found. Please add VITE_GEMINI_API_KEY to .env.local');
+      yield 'API key not configured. Please contact your administrator.';
+      return;
+    }
+    
+    const ai = new GoogleGenAI({ apiKey });
     const responseStream = await ai.models.generateContentStream({
       model: 'gemini-3-flash-preview',
       contents: prompt,
