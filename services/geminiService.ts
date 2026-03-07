@@ -11,29 +11,80 @@ export async function* getMedicalAssistanceStream(prompt: string) {
       return;
     }
     
-    const ai = new GoogleGenAI({ apiKey });
-    const responseStream = await ai.models.generateContentStream({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
+    console.log('Initializing Gemini AI with key:', apiKey.substring(0, 10) + '...');
+    const genAI = new GoogleGenAI({ apiKey });
+    
+    console.log('Getting model...');
+    const model = genAI.models.get('gemini-2.0-flash-exp');
+    
+    console.log('Generating content stream...');
+    const result = await model.generateContentStream({
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: `You are PharmaCore Assistant, a highly specialized tool for pharmacists. 
+Focus on: 
+1. Drug-drug interaction safety.
+2. Pediatric and geriatric dosage guidance.
+3. Stock management advice for medical inventories.
+
+Always use markdown formatting (headers with #, bold with **, bullet points with *) for clarity.
+Include a mandatory professional disclaimer that this tool does not replace professional medical judgment or doctor consultation.
+
+User Query: ${prompt}`
+            }
+          ]
+        }
+      ],
       config: {
-        systemInstruction: `You are PharmaCore Assistant, a highly specialized tool for pharmacists. 
-        Focus on: 
-        1. Drug-drug interaction safety.
-        2. Pediatric and geriatric dosage guidance.
-        3. Stock management advice for medical inventories.
-        
-        Always use bullet points for clarity and include a mandatory professional disclaimer that this tool does not replace professional medical judgment or doctor consultation.`,
         temperature: 0.5,
-      },
+        maxOutputTokens: 2048,
+      }
     });
 
-    for await (const chunk of responseStream) {
-      if (chunk.text) {
-        yield chunk.text;
+    console.log('Streaming response...');
+    for await (const chunk of result.stream) {
+      const text = chunk.text();
+      if (text) {
+        yield text;
       }
     }
-  } catch (error) {
-    console.error("Gemini Streaming Error:", error);
-    yield "I encountered an error while processing your request. Please ensure your query is valid and try again.";
+    console.log('Stream completed successfully');
+  } catch (error: any) {
+    console.error("Gemini Streaming Error Details:", {
+      message: error?.message,
+      status: error?.status,
+      statusText: error?.statusText,
+      stack: error?.stack,
+      error: error
+    });
+    
+    // Provide more specific error messages
+    if (error?.message?.includes('API_KEY_INVALID') || error?.message?.includes('API key')) {
+      yield "Invalid API key. Please check your Gemini API key configuration.";
+    } else if (error?.message?.includes('quota') || error?.message?.includes('429')) {
+      yield "API quota exceeded. Please try again later or check your Gemini API quota.";
+    } else if (error?.message?.includes('model') || error?.message?.includes('404')) {
+      yield "Model not available. Trying alternative model...";
+      // Fallback to a different model
+      try {
+        const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
+        const model = genAI.models.get('gemini-1.5-flash');
+        const result = await model.generateContentStream({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          config: { temperature: 0.5 }
+        });
+        for await (const chunk of result.stream) {
+          const text = chunk.text();
+          if (text) yield text;
+        }
+      } catch (fallbackError) {
+        yield "Unable to connect to AI service. Please try again later.";
+      }
+    } else {
+      yield `Error: ${error?.message || 'Unknown error occurred'}. Please check the console for details.`;
+    }
   }
 }

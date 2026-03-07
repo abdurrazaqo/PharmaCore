@@ -199,7 +199,7 @@ const Customers: React.FC = () => {
                 <th className="px-3 py-2">Patient Name</th>
                 <th className="px-3 py-2">Contact</th>
                 <th className="px-2 py-2 text-center hidden lg:table-cell">Visits</th>
-                <th className="px-2 py-2">Insurance</th>
+                <th className="px-2 py-2 hidden lg:table-cell">Insurance</th>
                 <th className="px-2 py-2">Balance</th>
                 <th className="px-2 py-2 text-right">Actions</th>
               </tr>
@@ -235,7 +235,7 @@ const Customers: React.FC = () => {
                   <td className="px-2 py-2 text-center hidden lg:table-cell">
                     <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">{customer.visits}</span>
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="px-2 py-2 hidden lg:table-cell">
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                       customer.insurance === 'Uninsured' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                     }`}>

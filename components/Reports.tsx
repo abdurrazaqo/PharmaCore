@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import { getProducts, getTransactions, getCustomers } from '../services/database';
 import { supabase } from '../services/supabaseClient';
+import { useAuth, Permission } from '../contexts/AuthContext';
 
 const COLORS = ['#006C75', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
 const Reports: React.FC = () => {
+  const { hasPermission, profile } = useAuth();
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [salesTrendData, setSalesTrendData] = useState<any[]>([]);
   const [avgBasketSize, setAvgBasketSize] = useState(0);
@@ -166,6 +168,12 @@ const Reports: React.FC = () => {
   };
 
   const handleExportPDF = () => {
+    // Check permission
+    if (!hasPermission(Permission.REPORTS_EXPORT)) {
+      alert('You do not have permission to export reports.');
+      return;
+    }
+    
     const reportContent = `
 PHARMACORE BUSINESS REPORT
 Generated: ${new Date().toLocaleString()}
@@ -249,12 +257,14 @@ End of Report
           <p className="text-sm text-slate-500">Analytics and sales performance metrics</p>
         </div>
         <div className="flex gap-2 w-full lg:w-auto">
-          <button 
-            onClick={handleExportPDF}
-            className="flex-1 lg:flex-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-          >
-            <span className="material-symbols-outlined text-lg">download</span> Export PDF
-          </button>
+          {hasPermission(Permission.REPORTS_EXPORT) && (
+            <button 
+              onClick={handleExportPDF}
+              className="flex-1 lg:flex-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+            >
+              <span className="material-symbols-outlined text-lg">download</span> Export PDF
+            </button>
+          )}
           <div className="relative flex-1 lg:flex-none">
             <button 
               onClick={handleDateRangeChange}

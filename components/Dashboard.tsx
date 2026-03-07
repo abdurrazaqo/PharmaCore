@@ -7,12 +7,14 @@ import { supabase } from '../services/supabaseClient';
 import PrintReceipt from './PrintReceipt';
 import TransactionHistory from './TransactionHistory';
 import ReturnModal from './ReturnModal';
+import { useAuth, Permission } from '../contexts/AuthContext';
 
 interface DashboardProps {
   onNavigate?: (page: Page) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+  const { hasPermission, profile } = useAuth();
   const [chartPeriod, setChartPeriod] = useState<'Week' | 'Month'>('Week');
   const [transactions, setTransactions] = useState<any[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<any[]>([]);
@@ -498,7 +500,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   </td>
                   <td className="px-3 lg:px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {tx.status === 'Completed' && (
+                      {tx.status === 'Completed' && hasPermission(Permission.SALES_REFUND) && (
                         <button 
                           onClick={() => setReturnTransactionId(tx.id)}
                           className="text-slate-400 hover:text-red-500 transition-colors"

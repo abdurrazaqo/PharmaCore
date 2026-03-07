@@ -5,11 +5,13 @@ import EditProductModal from './EditProductModal';
 import { getProducts, addProduct, deleteProduct, updateProduct } from '../services/database';
 import { Product } from '../types';
 import { useToast } from './ToastContainer';
+import { useAuth, Permission } from '../contexts/AuthContext';
 
 const Inventory: React.FC = () => {
   const [filter, setFilter] = useState('All');
   const [products, setProducts] = useState<Product[]>([]);
   const { showToast } = useToast();
+  const { hasPermission, profile } = useAuth();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -37,6 +39,11 @@ const Inventory: React.FC = () => {
   };
 
   const handleAddProduct = async (newProduct: any) => {
+    if (!hasPermission(Permission.INVENTORY_ADD)) {
+      alert('You do not have permission to add products.');
+      return;
+    }
+    
     try {
       const added = await addProduct(newProduct);
       setProducts([...products, added]);
@@ -48,6 +55,11 @@ const Inventory: React.FC = () => {
   };
 
   const handleDeleteProduct = async (id: string) => {
+    if (!hasPermission(Permission.INVENTORY_DELETE)) {
+      alert('You do not have permission to delete products.');
+      return;
+    }
+    
     if (!confirm('Are you sure you want to delete this medicine? This action cannot be undone.')) {
       return;
     }
@@ -68,11 +80,21 @@ const Inventory: React.FC = () => {
   };
 
   const handleEditProduct = (product: Product) => {
+    if (!hasPermission(Permission.INVENTORY_EDIT)) {
+      alert('You do not have permission to edit products.');
+      return;
+    }
+    
     setSelectedProduct(product);
     setIsEditModalOpen(true);
   };
 
   const handleUpdateProduct = async (id: string, updates: Partial<Product>) => {
+    if (!hasPermission(Permission.INVENTORY_EDIT)) {
+      alert('You do not have permission to update products.');
+      return;
+    }
+    
     try {
       const updated = await updateProduct(id, updates);
       setProducts(products.map(p => p.id === id ? updated : p));
@@ -127,6 +149,12 @@ const Inventory: React.FC = () => {
   }, [filter, searchTerm]);
 
   const handleExportInventory = () => {
+    // Check permission
+    if (!hasPermission(Permission.INVENTORY_EXPORT)) {
+      alert('You do not have permission to export inventory data.');
+      return;
+    }
+    
     // Create CSV content
     const headers = ['Medicine Name', 'Generic Name', 'Category', 'Batch No', 'Barcode', 'Expiry Date', 'Total Units', 'Cost Price (₦)', 'Selling Price (₦)', 'Stock Status'];
     
@@ -208,14 +236,16 @@ const Inventory: React.FC = () => {
       {/* Page Title with Export */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold dark:text-white">Inventory Management</h2>
-        <button 
-          onClick={handleExportInventory}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
-          title="Export inventory to CSV"
-        >
-          <span className="material-symbols-outlined text-lg">download</span>
-          Export CSV
-        </button>
+        {hasPermission(Permission.INVENTORY_EXPORT) && (
+          <button 
+            onClick={handleExportInventory}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
+            title="Export inventory to CSV"
+          >
+            <span className="material-symbols-outlined text-lg">download</span>
+            Export CSV
+          </button>
+        )}
       </div>
 
       {/* Filters & Action Bar */}
@@ -247,13 +277,15 @@ const Inventory: React.FC = () => {
             ))}
           </div>
         </div>
-        <button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="w-full lg:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-primary/20 transition-all lg:shrink-0"
-        >
-          <span className="material-symbols-outlined">add</span>
-          Add New Medicine
-        </button>
+        {hasPermission(Permission.INVENTORY_ADD) && (
+          <button 
+            onClick={() => setIsAddModalOpen(true)}
+            className="w-full lg:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-primary/20 transition-all lg:shrink-0"
+          >
+            <span className="material-symbols-outlined">add</span>
+            Add New Medicine
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -317,20 +349,27 @@ const Inventory: React.FC = () => {
                   </td>
                   <td className="px-2 py-2 text-right">
                     <div className="flex justify-end gap-1">
-                      <button 
-                        onClick={() => handleEditProduct(prod)}
-                        className="p-1 text-slate-400 hover:text-primary transition-colors"
-                        title="Edit Medicine"
-                      >
-                        <span className="material-symbols-outlined text-base">edit</span>
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteProduct(prod.id)}
-                        className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
-                        title="Delete Medicine"
-                      >
-                        <span className="material-symbols-outlined text-base">delete</span>
-                      </button>
+                      {hasPermission(Permission.INVENTORY_EDIT) && (
+                        <button 
+                          onClick={() => handleEditProduct(prod)}
+                          className="p-1 text-slate-400 hover:text-primary transition-colors"
+                          title="Edit Medicine"
+                        >
+                          <span className="material-symbols-outlined text-base">edit</span>
+                        </button>
+                      )}
+                      {hasPermission(Permission.INVENTORY_DELETE) && (
+                        <button 
+                          onClick={() => handleDeleteProduct(prod.id)}
+                          className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                          title="Delete Medicine"
+                        >
+                          <span className="material-symbols-outlined text-base">delete</span>
+                        </button>
+                      )}
+                      {!hasPermission(Permission.INVENTORY_EDIT) && !hasPermission(Permission.INVENTORY_DELETE) && (
+                        <span className="text-xs text-slate-400 italic px-2">View Only</span>
+                      )}
                     </div>
                   </td>
                 </tr>

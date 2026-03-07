@@ -1,18 +1,29 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useAuth, Permission } from '../contexts/AuthContext';
 import { Page } from '../types';
 import Logo from './Logo';
 
 interface LayoutProps {
-  children: React.ReactNode;
-  activePage: Page;
-  onNavigate: (page: Page) => void;
   isAiOpen?: boolean;
   onToggleAi?: () => void;
   aiContent?: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiOpen, onToggleAi, aiContent }) => {
+const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { logout, profile, hasPermission } = useAuth();
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('🎨 Layout - Profile data:', profile);
+    console.log('🎨 Layout - Display name:', profile?.display_name);
+    console.log('🎨 Layout - Branch:', profile?.branch);
+    console.log('🎨 Layout - Tenant:', profile?.tenant);
+    console.log('🎨 Layout - Role:', profile?.role);
+  }, [profile]);
+  
   const [isDark, setIsDark] = useState(() => {
     // Check localStorage first
     const saved = localStorage.getItem('theme');
@@ -23,6 +34,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Extract active page from current URL
+  const activePage = location.pathname.split('/')[1] as Page || Page.DASHBOARD;
 
   useEffect(() => {
     // Apply theme and save to localStorage
@@ -55,6 +69,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
     { id: Page.INVENTORY, label: 'Inventory', icon: 'inventory_2', shortLabel: 'Stock' },
     { id: Page.CUSTOMERS, label: 'Patients', icon: 'group', shortLabel: 'Patients' },
     { id: Page.REPORTS, label: 'Reports', icon: 'bar_chart', shortLabel: 'Reports' },
+    ...(hasPermission(Permission.USERS_VIEW) ? [
+      { id: 'users', label: 'User Management', icon: 'manage_accounts', shortLabel: 'Users' }
+    ] : []),
   ];
 
   return (
@@ -70,9 +87,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => onNavigate(item.id)}
+              onClick={() => navigate('/' + item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                activePage === item.id 
+                (activePage === item.id || location.pathname === '/' + item.id)
                   ? 'bg-primary text-white shadow-lg shadow-primary/20' 
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
               }`}
@@ -89,8 +106,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
               <span className="material-symbols-outlined">account_circle</span>
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-semibold truncate dark:text-white">Pharm. Abdurrazaq O.</p>
-              <p className="text-[10px] text-slate-500 truncate">Administrator</p>
+              <p className="text-sm font-semibold truncate dark:text-white">
+                {profile?.display_name || 'User'}
+              </p>
+              <p className="text-[10px] text-slate-500 truncate capitalize">
+                {profile?.role?.replace('_', ' ') || 'Staff'}
+              </p>
             </div>
           </div>
         </div>
@@ -121,8 +142,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
                 <span className="material-symbols-outlined">store</span>
               </div>
               <div className="text-left">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">Main Pharmacy</p>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Terminal #01</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {profile?.tenant?.name || 'Main Pharmacy'}
+                </p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                  {profile?.branch?.name || 'Terminal #01'}
+                </p>
               </div>
             </div>
           </div>
@@ -166,6 +191,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
                 <span className="material-symbols-outlined text-xl lg:text-2xl">help</span>
               </a>
               <button 
+                onClick={logout}
                 className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                 title="Sign Out"
               >
@@ -175,34 +201,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
           </div>
         </header>
 
-        {/* Content with bottom padding for mobile nav */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-16 lg:pb-0">
-          {children}
+        {/* Content - no bottom padding needed since bottom nav is removed */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <Outlet />
         </div>
       </main>
-
-      {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-dark border-t border-slate-200 dark:border-slate-800 z-10 safe-area-bottom">
-        <div className="flex items-center justify-around h-16" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              className={`flex flex-col items-center justify-center gap-1 px-3 py-2 min-w-[60px] transition-all ${
-                activePage === item.id 
-                  ? 'text-primary' 
-                  : 'text-slate-400 dark:text-slate-500'
-              }`}
-              style={{ minHeight: '44px' }}
-            >
-              <span className={`material-symbols-outlined text-2xl ${activePage === item.id ? 'font-bold' : ''}`}>
-                {item.icon}
-              </span>
-              <span className="text-[10px] font-medium leading-none">{item.shortLabel}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
 
       {/* Mobile Hamburger Menu */}
       {isMenuOpen && (
@@ -234,8 +237,33 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
             <div className="flex-1 overflow-y-auto p-4">
               {/* Terminal Info */}
               <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-800">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">Main Pharmacy</p>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Terminal #01</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {profile?.tenant?.name || 'Main Pharmacy'}
+                </p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                  {profile?.branch?.name || 'Terminal #01'}
+                </p>
+              </div>
+
+              {/* Main Menu Items */}
+              <div className="space-y-2 mb-4">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      navigate('/' + item.id);
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                      (activePage === item.id || location.pathname === '/' + item.id)
+                        ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined">{item.icon}</span>
+                    <span className="font-medium text-sm">{item.label}</span>
+                  </button>
+                ))}
               </div>
 
               {/* Help & Support */}
@@ -255,12 +283,19 @@ const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, isAiO
                   <span className="material-symbols-outlined text-2xl">account_circle</span>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-semibold truncate dark:text-white">Pharm. Abdurrazaq O.</p>
-                  <p className="text-xs text-slate-500 truncate">Administrator</p>
+                  <p className="text-sm font-semibold truncate dark:text-white">
+                    {profile?.display_name || 'User'}
+                  </p>
+                  <p className="text-xs text-slate-500 truncate capitalize">
+                    {profile?.role?.replace('_', ' ') || 'Staff'}
+                  </p>
                 </div>
               </div>
 
-              <button className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all font-medium">
+              <button 
+                onClick={logout}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all font-medium"
+              >
                 <span className="material-symbols-outlined">logout</span>
                 <span>Sign Out</span>
               </button>

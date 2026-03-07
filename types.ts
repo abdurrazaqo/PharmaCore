@@ -1,3 +1,27 @@
+export enum UserRole {
+  SUPERADMIN = 'superadmin',
+  TENANT_ADMIN = 'tenant_admin',
+  STAFF = 'staff'
+}
+
+export interface UserProfile {
+  id: string; // Auth UID
+  tenant_id: string; // Tenant identifier
+  role: UserRole;
+  branch_id?: string;
+  display_name?: string;
+  // Joined data
+  tenant?: {
+    id: string;
+    name: string;
+    subdomain?: string;
+  };
+  branch?: {
+    id: string;
+    name: string;
+    location?: string;
+  };
+}
 
 export enum TransactionStatus {
   COMPLETED = 'Completed',
