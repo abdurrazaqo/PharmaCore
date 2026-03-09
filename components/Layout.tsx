@@ -33,35 +33,59 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
     // Fall back to system preference
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
+  const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'system'>(() => {
+    return (localStorage.getItem('themeMode') as 'light' | 'dark' | 'system') || 'system';
+  });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Extract active page from current URL
   const activePage = location.pathname.split('/')[1] as Page || Page.DASHBOARD;
 
   useEffect(() => {
-    // Apply theme and save to localStorage
-    if (isDark) {
+    // Apply theme based on mode
+    let shouldBeDark = isDark;
+    
+    if (themeMode === 'system') {
+      shouldBeDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } else {
+      shouldBeDark = themeMode === 'dark';
+    }
+    
+    if (shouldBeDark) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
     }
-  }, [isDark]);
+    
+    setIsDark(shouldBeDark);
+  }, [themeMode]);
 
   // Listen for system theme changes
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
-      // Only auto-switch if user hasn't manually set a preference
-      if (!localStorage.getItem('theme')) {
+      // Only auto-switch if in system mode
+      if (themeMode === 'system') {
         setIsDark(e.matches);
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
       }
     };
     
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [themeMode]);
+
+  const cycleTheme = () => {
+    const modes: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
+    const currentIndex = modes.indexOf(themeMode);
+    const nextMode = modes[(currentIndex + 1) % modes.length];
+    setThemeMode(nextMode);
+    localStorage.setItem('themeMode', nextMode);
+  };
 
   const navItems = [
     { id: Page.DASHBOARD, label: 'Dashboard', icon: 'dashboard', shortLabel: 'Home' },
@@ -155,19 +179,13 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
           <div className="flex items-center gap-2 lg:gap-3">
             {/* Theme Toggle */}
             <button 
-              onClick={() => setIsDark(!isDark)}
-              className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
-              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              onClick={cycleTheme}
+              className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              title={themeMode === 'system' ? 'Theme: System' : themeMode === 'dark' ? 'Theme: Dark' : 'Theme: Light'}
             >
-              <div className="relative w-12 h-6 bg-slate-200 dark:bg-slate-700 rounded-full transition-colors">
-                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-slate-900 rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${
-                  isDark ? 'translate-x-6' : 'translate-x-0'
-                }`}>
-                  <span className="material-symbols-outlined text-xs text-slate-600 dark:text-yellow-400">
-                    {isDark ? 'dark_mode' : 'light_mode'}
-                  </span>
-                </div>
-              </div>
+              <span className="material-symbols-outlined text-xl lg:text-2xl">
+                {themeMode === 'system' ? 'brightness_auto' : themeMode === 'dark' ? 'dark_mode' : 'light_mode'}
+              </span>
             </button>
             {onToggleAi && (
               <button 
@@ -211,7 +229,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
       {isMenuOpen && (
         <>
           <div 
-            className="lg:hidden fixed bg-black/50 z-30 animate-in fade-in duration-200"
+            className="lg:hidden fixed bg-black/50 z-40 animate-in fade-in duration-200"
             style={{ 
               position: 'fixed',
               top: 0,
@@ -223,29 +241,32 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
             }}
             onClick={() => setIsMenuOpen(false)}
           />
-          <div className="lg:hidden fixed top-0 left-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-surface-dark z-30 animate-in slide-in-from-left duration-300 flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <div className="lg:hidden fixed top-0 left-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-slate-900 z-50 animate-in slide-in-from-left duration-300 flex flex-col shadow-2xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             <div className="p-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
-              <Logo size="md" />
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                  <span className="material-symbols-outlined">store</span>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    {profile?.tenant?.name || 'Main Pharmacy'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                    {profile?.branch?.name || 'Terminal #01'}
+                  </p>
+                </div>
+              </div>
               <button 
                 onClick={() => setIsMenuOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
-              {/* Terminal Info */}
-              <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-800">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {profile?.tenant?.name || 'Main Pharmacy'}
-                </p>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                  {profile?.branch?.name || 'Terminal #01'}
-                </p>
-              </div>
-
               {/* Main Menu Items */}
+              <p className="px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Main Menu</p>
               <div className="space-y-2 mb-4">
                 {navItems.map((item) => (
                   <button

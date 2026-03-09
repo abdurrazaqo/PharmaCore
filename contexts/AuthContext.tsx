@@ -42,6 +42,7 @@ export enum Permission {
   
   // User management permissions
   USERS_VIEW = 'users:view',
+  USERS_CREATE = 'users:create',
   USERS_ADD = 'users:add',
   USERS_EDIT = 'users:edit',
   USERS_DELETE = 'users:delete',
@@ -105,6 +106,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('🔍 Fetching profile for user:', userId);
       
+      // Update last_sign_in_at timestamp
+      await supabase
+        .from('users')
+        .update({ last_sign_in_at: new Date().toISOString() })
+        .eq('id', userId);
+      
       // Fetch user data first
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -122,6 +129,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!userData) {
         console.error('No user data found');
+        return;
+      }
+
+      // Check if user is suspended (only if column exists)
+      if (userData.is_suspended === true) {
+        console.error('User account is suspended');
+        await supabase.auth.signOut();
+        alert('Your account has been suspended. Please contact an administrator.');
         return;
       }
 

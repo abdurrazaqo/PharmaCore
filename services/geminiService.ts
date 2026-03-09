@@ -14,11 +14,9 @@ export async function* getMedicalAssistanceStream(prompt: string) {
     console.log('Initializing Gemini AI with key:', apiKey.substring(0, 10) + '...');
     const genAI = new GoogleGenAI({ apiKey });
     
-    console.log('Getting model...');
-    const model = genAI.models.get('gemini-2.0-flash-exp');
-    
     console.log('Generating content stream...');
-    const result = await model.generateContentStream({
+    const resultStream = await genAI.models.generateContentStream({
+      model: 'gemini-2.0-flash',
       contents: [
         {
           role: 'user',
@@ -45,8 +43,8 @@ User Query: ${prompt}`
     });
 
     console.log('Streaming response...');
-    for await (const chunk of result.stream) {
-      const text = chunk.text();
+    for await (const chunk of resultStream) {
+      const text = chunk.text;
       if (text) {
         yield text;
       }
@@ -71,13 +69,13 @@ User Query: ${prompt}`
       // Fallback to a different model
       try {
         const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
-        const model = genAI.models.get('gemini-1.5-flash');
-        const result = await model.generateContentStream({
+        const resultStream = await genAI.models.generateContentStream({
+          model: 'gemini-1.5-flash',
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           config: { temperature: 0.5 }
         });
-        for await (const chunk of result.stream) {
-          const text = chunk.text();
+        for await (const chunk of resultStream) {
+          const text = chunk.text;
           if (text) yield text;
         }
       } catch (fallbackError) {
