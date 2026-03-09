@@ -49,8 +49,8 @@ const AlertModal: React.FC<AlertModalProps> = ({
   const styles = getTypeStyles();
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full">
+    <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
+      <div className="modal-content bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full">
         {/* Modal Header */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
