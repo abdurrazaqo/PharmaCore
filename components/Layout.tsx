@@ -242,9 +242,10 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
             onClick={() => setIsMenuOpen(false)}
           />
           <div 
-            className="menu-drawer lg:hidden w-80 max-w-[85vw] bg-white dark:bg-surface-dark animate-in slide-in-from-left duration-300 flex flex-col shadow-2xl overflow-hidden" 
+            className="menu-drawer lg:hidden w-80 max-w-[85vw] bg-white dark:bg-surface-dark animate-in slide-in-from-left duration-300 shadow-2xl"
           >
-            <div className="p-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 shrink-0">
+            {/* Header */}
+            <div className="p-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-3">
                 <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                   <span className="material-symbols-outlined">store</span>
@@ -266,7 +267,8 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 min-h-0">
+            {/* Scrollable Content */}
+            <div className="p-4 pb-24">
               {/* Main Menu Items */}
               <p className="px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Main Menu</p>
               <div className="space-y-2 mb-4">
@@ -292,16 +294,14 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
               {/* Help & Support */}
               <a 
                 href="mailto:hello@365health.online"
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all mb-4"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all mb-6"
               >
                 <span className="material-symbols-outlined">help</span>
                 <span className="font-medium text-sm">Help & Support</span>
               </a>
-            </div>
 
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3 shrink-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-              {/* User Profile - Moved here before Sign Out */}
-              <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-xl">
+              {/* User Profile */}
+              <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-xl mb-3">
                 <div className="size-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined text-2xl">account_circle</span>
                 </div>
@@ -315,17 +315,19 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
                 </div>
               </div>
 
+              {/* Change Password Button */}
               <button 
                 onClick={() => {
                   setIsChangePasswordOpen(true);
                   setIsMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-medium"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-medium mb-3"
               >
                 <span className="material-symbols-outlined">lock_reset</span>
                 <span>Change Password</span>
               </button>
 
+              {/* Sign Out Button */}
               <button 
                 onClick={logout}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all font-medium"
