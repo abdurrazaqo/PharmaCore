@@ -242,10 +242,9 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
             onClick={() => setIsMenuOpen(false)}
           />
           <div 
-            className="menu-drawer lg:hidden w-80 max-w-[85vw] bg-white dark:bg-surface-dark animate-in slide-in-from-left duration-300 flex flex-col shadow-2xl" 
-            style={{ paddingTop: 'env(safe-area-inset-top)' }}
+            className="menu-drawer lg:hidden w-80 max-w-[85vw] bg-white dark:bg-surface-dark animate-in slide-in-from-left duration-300 flex flex-col shadow-2xl overflow-hidden" 
           >
-            <div className="p-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
+            <div className="p-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                   <span className="material-symbols-outlined">store</span>
@@ -267,7 +266,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 min-h-0">
               {/* Main Menu Items */}
               <p className="px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Main Menu</p>
               <div className="space-y-2 mb-4">
@@ -300,7 +299,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
               </a>
             </div>
 
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3 shrink-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
               {/* User Profile - Moved here before Sign Out */}
               <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-xl">
                 <div className="size-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
