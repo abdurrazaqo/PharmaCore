@@ -204,7 +204,7 @@ const UserManagement: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600">
               <span className="material-symbols-outlined">store</span>
@@ -216,7 +216,7 @@ const UserManagement: React.FC = () => {
           </h3>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600">
               <span className="material-symbols-outlined">group</span>
@@ -226,7 +226,7 @@ const UserManagement: React.FC = () => {
           <h3 className="text-2xl font-bold mt-1">{users.length}</h3>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600">
               <span className="material-symbols-outlined">check_circle</span>
@@ -243,7 +243,7 @@ const UserManagement: React.FC = () => {
           </h3>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600">
               <span className="material-symbols-outlined">pie_chart</span>
@@ -264,14 +264,14 @@ const UserManagement: React.FC = () => {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-full">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                 <th className="px-3 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Name</th>
                 <th className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Role</th>
-                <th className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
+                <th className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden sm:table-cell">Status</th>
                 <th className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Last Login</th>
                 <th className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Actions</th>
               </tr>
@@ -307,7 +307,7 @@ const UserManagement: React.FC = () => {
                         {user.role.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-2 lg:px-6 py-3 lg:py-4">
+                    <td className="px-2 lg:px-6 py-3 lg:py-4 hidden sm:table-cell">
                       <span className={`inline-flex items-center px-1.5 lg:px-2.5 py-0.5 rounded-full text-[9px] lg:text-xs font-medium whitespace-nowrap ${
                         user.is_suspended === true
                           ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -428,7 +428,7 @@ const UserManagement: React.FC = () => {
       {/* Add User Modal */}
       {showAddUserModal && (
         <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
-          <div className="modal-content bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-xl font-bold dark:text-white">Add New User</h3>
@@ -558,7 +558,7 @@ const UserManagement: React.FC = () => {
       {/* Edit User Modal */}
       {showEditUserModal && selectedUser && (
         <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
-          <div className="modal-content bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full">
+          <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-md w-full">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-xl font-bold dark:text-white">Edit User</h3>
@@ -638,7 +638,7 @@ const UserManagement: React.FC = () => {
       {/* Confirmation Modal */}
       {showConfirmModal && confirmAction && (
         <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
-          <div className="modal-content bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full">
+          <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-md w-full">
             {/* Modal Header */}
             <div className="p-6 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-3">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getNextCustomerId } from '../services/database';
+import { useToast } from './ToastContainer';
 
 interface AddCustomerModalProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface AddCustomerModalProps {
 }
 
 const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onClose, onAdd }) => {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -54,7 +56,7 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onClose, on
       setFormData({ name: '', phone: '', insurance: 'Uninsured' });
     } catch (error) {
       console.error('Error generating customer ID:', error);
-      alert('Failed to generate customer ID. Please try again.');
+      showToast('Failed to generate customer ID. Please try again.', 'error');
     }
   };
 

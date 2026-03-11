@@ -50,7 +50,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
 
   return (
     <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
-      <div className="modal-content bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full">
+      <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-md w-full">
         {/* Modal Header */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">

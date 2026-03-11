@@ -190,6 +190,32 @@
         body:has(.modal-overlay) main {
             z-index: 1 !important;
         }
+        
+        /* Hamburger menu overlay fix */
+        .menu-overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            height: 100dvh !important;
+            z-index: 9998 !important;
+        }
+        
+        .menu-drawer {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            height: 100dvh !important;
+            z-index: 9999 !important;
+        }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-200">

@@ -4,11 +4,12 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Ba
 import { getProducts, getTransactions, getCustomers } from '../services/database';
 import { supabase } from '../services/supabaseClient';
 import { useAuth, Permission } from '../contexts/AuthContext';
-
-const COLORS = ['#006C75', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+import { getCategoryColor } from '../utils/categoryColors';
+import { useToast } from './ToastContainer';
 
 const Reports: React.FC = () => {
   const { hasPermission, profile } = useAuth();
+  const { showToast } = useToast();
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [salesTrendData, setSalesTrendData] = useState<any[]>([]);
   const [avgBasketSize, setAvgBasketSize] = useState(0);
@@ -170,7 +171,7 @@ const Reports: React.FC = () => {
   const handleExportPDF = () => {
     // Check permission
     if (!hasPermission(Permission.REPORTS_EXPORT)) {
-      alert('You do not have permission to export reports.');
+      showToast('You do not have permission to export reports.', 'error');
       return;
     }
     
@@ -307,7 +308,7 @@ End of Report
           { label: 'Patient Retention', value: loading ? '...' : `${patientRetention.toFixed(0)}%`, icon: 'loyalty', color: 'text-emerald-500' },
         ].map((stat, i) => (
           <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center gap-4">
-            <div className={`${stat.color} bg-white dark:bg-slate-900 p-3 rounded-xl shadow-sm`}>
+            <div className={`${stat.color} bg-white dark:bg-surface-dark p-3 rounded-xl shadow-sm`}>
               <span className="material-symbols-outlined">{stat.icon}</span>
             </div>
             <div>
@@ -336,7 +337,7 @@ End of Report
                   dataKey="value"
                 >
                   {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={getCategoryColor(entry.name).chart} />
                   ))}
                 </Pie>
                 <Tooltip />

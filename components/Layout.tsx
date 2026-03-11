@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth, Permission } from '../contexts/AuthContext';
 import { Page } from '../types';
 import Logo from './Logo';
+import ChangePasswordModal from './ChangePasswordModal';
 
 interface LayoutProps {
   isAiOpen?: boolean;
@@ -37,6 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
     return (localStorage.getItem('themeMode') as 'light' | 'dark' | 'system') || 'system';
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   // Extract active page from current URL
   const activePage = location.pathname.split('/')[1] as Page || Page.DASHBOARD;
@@ -101,39 +103,39 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
       {/* Desktop Sidebar - Hidden on Mobile */}
-      <aside className="hidden lg:flex w-64 bg-white dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex-col shrink-0">
-        <div className="p-6">
+      <aside className="hidden lg:flex w-56 bg-white dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex-col shrink-0">
+        <div className="p-5">
           <Logo size="md" />
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
-          <p className="px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Main Menu</p>
+        <nav className="flex-1 px-3 space-y-1.5 mt-2 overflow-y-auto">
+          <p className="px-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Main Menu</p>
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => navigate('/' + item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all ${
                 (activePage === item.id || location.pathname === '/' + item.id)
                   ? 'bg-primary text-white shadow-lg shadow-primary/20' 
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
               }`}
             >
-              <span className="material-symbols-outlined">{item.icon}</span>
+              <span className="material-symbols-outlined text-xl">{item.icon}</span>
               <span className="font-medium text-sm">{item.label}</span>
             </button>
           ))}
         </nav>
 
-        <div className="p-4 mt-auto border-t border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl">
-            <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined">account_circle</span>
+        <div className="p-3 mt-auto border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/30 p-2.5 rounded-lg">
+            <div className="size-9 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-xl">account_circle</span>
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-semibold truncate dark:text-white">
+              <p className="text-xs font-semibold truncate dark:text-white">
                 {profile?.display_name || 'User'}
               </p>
-              <p className="text-[10px] text-slate-500 truncate capitalize">
+              <p className="text-[9px] text-slate-500 truncate capitalize">
                 {profile?.role?.replace('_', ' ') || 'Staff'}
               </p>
             </div>
@@ -209,6 +211,13 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
                 <span className="material-symbols-outlined text-xl lg:text-2xl">help</span>
               </a>
               <button 
+                onClick={() => setIsChangePasswordOpen(true)}
+                className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="Change Password"
+              >
+                <span className="material-symbols-outlined text-xl lg:text-2xl">lock_reset</span>
+              </button>
+              <button 
                 onClick={logout}
                 className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                 title="Sign Out"
@@ -229,19 +238,13 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
       {isMenuOpen && (
         <>
           <div 
-            className="lg:hidden fixed bg-black/50 z-40 animate-in fade-in duration-200"
-            style={{ 
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              width: '100vw',
-              height: '100vh'
-            }}
+            className="menu-overlay lg:hidden bg-black/50 animate-in fade-in duration-200"
             onClick={() => setIsMenuOpen(false)}
           />
-          <div className="lg:hidden fixed top-0 left-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-slate-900 z-50 animate-in slide-in-from-left duration-300 flex flex-col shadow-2xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <div 
+            className="menu-drawer lg:hidden w-80 max-w-[85vw] bg-white dark:bg-surface-dark animate-in slide-in-from-left duration-300 flex flex-col shadow-2xl" 
+            style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          >
             <div className="p-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-3">
                 <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -314,6 +317,17 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
               </div>
 
               <button 
+                onClick={() => {
+                  setIsChangePasswordOpen(true);
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-medium"
+              >
+                <span className="material-symbols-outlined">lock_reset</span>
+                <span>Change Password</span>
+              </button>
+
+              <button 
                 onClick={logout}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all font-medium"
               >
@@ -331,6 +345,12 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
           {aiContent}
         </div>
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal 
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
     </div>
   );
 };

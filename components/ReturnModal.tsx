@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
+import { useToast } from './ToastContainer';
 
 interface ReturnModalProps {
   transactionId: string;
@@ -18,6 +19,7 @@ interface SaleItem {
 }
 
 const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuccess }) => {
+  const { showToast } = useToast();
   const [items, setItems] = useState<SaleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -40,7 +42,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
       if (salesError) throw salesError;
 
       if (!salesData || salesData.length === 0) {
-        alert('No items found for this transaction.');
+        showToast('No items found for this transaction.', 'error');
         onClose();
         return;
       }
@@ -79,7 +81,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
       
     } catch (error) {
       console.error('Error loading transaction items:', error);
-      alert('Failed to load transaction items. Please try again.');
+      showToast('Failed to load transaction items. Please try again.', 'error');
       onClose();
     } finally {
       setLoading(false);
@@ -104,7 +106,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
       const itemsToReturn = Object.entries(returnQuantities).filter(([_, qty]) => qty > 0);
       
       if (itemsToReturn.length === 0) {
-        alert('Please select at least one item to return.');
+        showToast('Please select at least one item to return.', 'warning');
         return;
       }
 
@@ -149,13 +151,13 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
 
       if (txError) throw txError;
 
-      alert(`Return processed successfully!\nRefund Amount: ₦${refundAmount.toFixed(2)}\nStock levels have been updated.`);
+      showToast(`Return processed successfully! Refund Amount: ₦${refundAmount.toFixed(2)}`, 'success');
       onSuccess();
       onClose();
 
     } catch (error) {
       console.error('Error processing return:', error);
-      alert('Failed to process return. Please try again.');
+      showToast('Failed to process return. Please try again.', 'error');
     } finally {
       setProcessing(false);
     }
@@ -168,7 +170,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
 
   return (
     <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
-      <div className="modal-content bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+      <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>

@@ -5,6 +5,8 @@ import { Product } from '../types';
 import PrintReceipt from './PrintReceipt';
 import SelectCustomerModal from './SelectCustomerModal';
 import { useToast } from './ToastContainer';
+import { getCategoryColor } from '../utils/categoryColors';
+import BarcodeScanner from './BarcodeScanner';
 
 const POS: React.FC = () => {
   const [cart, setCart] = useState<{id: string, qty: number}[]>([]);
@@ -30,6 +32,7 @@ const POS: React.FC = () => {
   const { showToast } = useToast();
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Update dropdown position when search input changes
   useEffect(() => {
@@ -207,6 +210,18 @@ const POS: React.FC = () => {
     setSelectedCustomer(customer);
   };
 
+  const handleBarcodeScan = (barcode: string) => {
+    setSearchTerm(barcode);
+    setShowSearchDropdown(true);
+    
+    // Try to find product by barcode
+    const product = products.find(p => p.barcode === barcode);
+    if (product) {
+      updateQty(product.id, 1);
+      showToast(`Added ${product.name} to cart`, 'success');
+    }
+  };
+
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.generic.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -227,7 +242,7 @@ const POS: React.FC = () => {
   return (
     <div className="flex h-full overflow-hidden flex-col lg:flex-row animate-in zoom-in-95 duration-300">
       {/* Catalog */}
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900/20 p-4 overflow-y-auto overflow-x-hidden relative">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-surface-dark/20 p-4 overflow-y-auto overflow-x-hidden relative">
         {/* Search Bar - Always visible, with dropdown on mobile */}
         <div className="relative mb-2 lg:mb-4" ref={searchDropdownRef}>
           <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
@@ -241,15 +256,16 @@ const POS: React.FC = () => {
               setShowSearchDropdown(e.target.value.length > 0);
             }}
             onFocus={() => setShowSearchDropdown(searchTerm.length > 0)}
-            className="block w-full pl-12 pr-14 py-4 text-lg bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 shadow-sm" 
-            placeholder="Scan barcode or type medicine name..." 
+            className="block w-full pl-12 pr-14 py-4 text-lg bg-white dark:bg-surface-dark border-2 border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 shadow-sm" 
+            placeholder="Type medicine name or scan barcode..." 
             type="text"
           />
           <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
             <button 
-              onClick={() => searchInputRef.current?.focus()}
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
               className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-primary transition-colors"
-              title="Click to scan barcode"
+              title="Scan barcode with camera"
             >
               <span className="material-symbols-outlined text-3xl">barcode_scanner</span>
             </button>
@@ -258,7 +274,7 @@ const POS: React.FC = () => {
           {/* Mobile Search Results Dropdown - Fixed positioning */}
           {showSearchDropdown && filteredProducts.length > 0 && (
             <div 
-              className="lg:hidden fixed bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-[50vh] overflow-y-auto z-[9999]"
+              className="lg:hidden fixed bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-[50vh] overflow-y-auto z-[9999]"
               style={{
                 top: `${dropdownPosition.top + 8}px`,
                 left: `${dropdownPosition.left}px`,
@@ -331,7 +347,7 @@ const POS: React.FC = () => {
 
           {showSearchDropdown && searchTerm && filteredProducts.length === 0 && (
             <div 
-              className="lg:hidden fixed bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-6 text-center z-[9999]"
+              className="lg:hidden fixed bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-6 text-center z-[9999]"
               style={{
                 top: `${dropdownPosition.top + 8}px`,
                 left: `${dropdownPosition.left}px`,
@@ -353,7 +369,7 @@ const POS: React.FC = () => {
         </div>
 
         {/* Products Table - Desktop Only */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hidden lg:block">
+        <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hidden lg:block">
           <div className="overflow-x-auto max-h-[calc(100vh-300px)]">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
@@ -395,7 +411,7 @@ const POS: React.FC = () => {
                           <p className="text-[10px] text-slate-500 italic leading-tight">{prod.generic}</p>
                         </td>
                         <td className="px-2 py-2">
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 whitespace-nowrap">
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${getCategoryColor(prod.category).bg} ${getCategoryColor(prod.category).text}`}>
                             {prod.category}
                           </span>
                         </td>
@@ -530,7 +546,7 @@ const POS: React.FC = () => {
                   <p className="text-[10px] text-slate-500">₦{prod.price.toFixed(2)} × {item.qty}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="flex items-center gap-0.5 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-0.5 bg-white dark:bg-surface-dark rounded-md border border-slate-200 dark:border-slate-700">
                     <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors">
                       <span className="material-symbols-outlined text-sm">remove</span>
                     </button>
@@ -610,7 +626,7 @@ const POS: React.FC = () => {
                 className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                   paymentMethod === 'Cash'
                     ? 'bg-primary text-white shadow-md'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary'
+                    : 'bg-white dark:bg-surface-dark text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary'
                 }`}
               >
                 <span className="material-symbols-outlined text-sm block mb-0.5">payments</span>
@@ -621,7 +637,7 @@ const POS: React.FC = () => {
                 className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                   paymentMethod === 'Card'
                     ? 'bg-primary text-white shadow-md'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary'
+                    : 'bg-white dark:bg-surface-dark text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary'
                 }`}
               >
                 <span className="material-symbols-outlined text-sm block mb-0.5">credit_card</span>
@@ -632,7 +648,7 @@ const POS: React.FC = () => {
                 className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                   paymentMethod === 'Transfer'
                     ? 'bg-primary text-white shadow-md'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary'
+                    : 'bg-white dark:bg-surface-dark text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary'
                 }`}
               >
                 <span className="material-symbols-outlined text-sm block mb-0.5">swap_horiz</span>
@@ -733,6 +749,13 @@ const POS: React.FC = () => {
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
         onSelect={handleSelectCustomer}
+      />
+
+      {/* Barcode Scanner */}
+      <BarcodeScanner 
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleBarcodeScan}
       />
     </div>
   );

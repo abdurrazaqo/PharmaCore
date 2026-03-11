@@ -8,6 +8,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const navigate = useNavigate();
 
@@ -47,7 +48,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col justify-center py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-surface-dark flex flex-col justify-center py-6 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <Logo size="lg" />
@@ -65,49 +66,61 @@ const Login: React.FC = () => {
 
       <div className="mt-6 sm:mt-8 sm:mx-auto w-full sm:max-w-md">
         <div className="bg-white dark:bg-slate-800 py-6 px-4 sm:py-8 sm:px-10 shadow-xl shadow-primary/5 rounded-2xl border border-slate-200 dark:border-slate-700">
-          <form className="space-y-4 sm:space-y-6" onSubmit={handleLogin}>
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <form className="space-y-6 sm:space-y-7" onSubmit={handleLogin}>
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">
+                person
+              </span>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="peer appearance-none block w-full px-3 pt-6 pb-2 sm:pt-7 sm:pb-2.5 border border-slate-300 dark:border-slate-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm sm:text-base bg-white dark:bg-surface-dark dark:text-white transition-all pl-10"
+                placeholder=" "
+              />
+              <label 
+                htmlFor="username" 
+                className="absolute left-10 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 text-sm sm:text-base transition-all duration-200 pointer-events-none peer-focus:top-2.5 peer-focus:text-xs peer-focus:text-primary peer-[:not(:placeholder-shown)]:top-2.5 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-slate-600 dark:peer-[:not(:placeholder-shown)]:text-slate-400"
+              >
                 Username
               </label>
-              <div className="mt-1 relative">
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="appearance-none block w-full px-3 py-3 sm:py-3.5 border border-slate-300 dark:border-slate-600 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary text-sm sm:text-base bg-white dark:bg-slate-900 dark:text-white transition-colors pl-10"
-                  placeholder="pharmacy_admin"
-                />
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  person
-                </span>
-              </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">
+                lock
+              </span>
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="peer appearance-none block w-full px-3 pt-6 pb-2 sm:pt-7 sm:pb-2.5 border border-slate-300 dark:border-slate-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm sm:text-base bg-white dark:bg-surface-dark dark:text-white transition-all pl-10 pr-10"
+                placeholder=" "
+              />
+              <label 
+                htmlFor="password" 
+                className="absolute left-10 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 text-sm sm:text-base transition-all duration-200 pointer-events-none peer-focus:top-2.5 peer-focus:text-xs peer-focus:text-primary peer-[:not(:placeholder-shown)]:top-2.5 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-slate-600 dark:peer-[:not(:placeholder-shown)]:text-slate-400"
+              >
                 Password
               </label>
-              <div className="mt-1 relative">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-3 sm:py-3.5 border border-slate-300 dark:border-slate-600 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary text-sm sm:text-base bg-white dark:bg-slate-900 dark:text-white transition-colors pl-10"
-                  placeholder="••••••••"
-                />
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  lock
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors z-10"
+                tabIndex={-1}
+              >
+                <span className="material-symbols-outlined text-xl">
+                  {showPassword ? 'visibility_off' : 'visibility'}
                 </span>
-              </div>
+              </button>
             </div>
 
             {error && (

@@ -108,7 +108,7 @@ const PrintReceipt: React.FC<PrintReceiptProps> = ({ transactionId, onClose }) =
         </div>
 
         {/* Preview */}
-        <div className="p-6 bg-slate-50 dark:bg-slate-900">
+        <div className="p-6 bg-slate-50 dark:bg-surface-dark">
           <div className="bg-white rounded-lg shadow-lg overflow-hidden mx-auto" style={{ width: 'fit-content' }}>
             <Receipt ref={receiptRef} transaction={transaction} width="80mm" />
           </div>

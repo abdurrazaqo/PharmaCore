@@ -6,6 +6,7 @@ import { getProducts, addProduct, deleteProduct, updateProduct } from '../servic
 import { Product } from '../types';
 import { useToast } from './ToastContainer';
 import { useAuth, Permission } from '../contexts/AuthContext';
+import { getCategoryColor } from '../utils/categoryColors';
 
 const Inventory: React.FC = () => {
   const [filter, setFilter] = useState('All');
@@ -31,7 +32,7 @@ const Inventory: React.FC = () => {
       setProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);
-      alert('Failed to load products from database. Please check your connection.');
+      showToast('Failed to load products from database. Please check your connection.', 'error');
       setProducts([]);
     } finally {
       setLoading(false);
@@ -40,23 +41,24 @@ const Inventory: React.FC = () => {
 
   const handleAddProduct = async (newProduct: any) => {
     if (!hasPermission(Permission.INVENTORY_ADD)) {
-      alert('You do not have permission to add products.');
+      showToast('You do not have permission to add products.', 'error');
       return;
     }
     
     try {
       const added = await addProduct(newProduct);
       setProducts([...products, added]);
-      alert('Medicine added successfully!');
+      showToast('Medicine added successfully!', 'success');
+      setIsAddModalOpen(false); // Close modal after success
     } catch (error) {
       console.error('Error adding product:', error);
-      alert('Failed to add medicine. Please try again.');
+      showToast('Failed to add medicine. Please try again.', 'error');
     }
   };
 
   const handleDeleteProduct = async (id: string) => {
     if (!hasPermission(Permission.INVENTORY_DELETE)) {
-      alert('You do not have permission to delete products.');
+      showToast('You do not have permission to delete products.', 'error');
       return;
     }
     
@@ -67,21 +69,21 @@ const Inventory: React.FC = () => {
     try {
       await deleteProduct(id);
       setProducts(products.filter(p => p.id !== id));
-      alert('Medicine deleted successfully!');
+      showToast('Medicine deleted successfully!', 'success');
       await loadProducts(); // Reload to ensure sync
     } catch (error: any) {
       console.error('Error deleting product:', error);
       if (error.message?.includes('foreign key') || error.code === '23503') {
-        alert('Cannot delete this medicine because it has been used in sales transactions. You can mark it as out of stock instead.');
+        showToast('Cannot delete this medicine because it has been used in sales transactions. You can mark it as out of stock instead.', 'error');
       } else {
-        alert(`Failed to delete medicine: ${error.message || 'Please try again.'}`);
+        showToast(`Failed to delete medicine: ${error.message || 'Please try again.'}`, 'error');
       }
     }
   };
 
   const handleEditProduct = (product: Product) => {
     if (!hasPermission(Permission.INVENTORY_EDIT)) {
-      alert('You do not have permission to edit products.');
+      showToast('You do not have permission to edit products.', 'error');
       return;
     }
     
@@ -91,17 +93,17 @@ const Inventory: React.FC = () => {
 
   const handleUpdateProduct = async (id: string, updates: Partial<Product>) => {
     if (!hasPermission(Permission.INVENTORY_EDIT)) {
-      alert('You do not have permission to update products.');
+      showToast('You do not have permission to update products.', 'error');
       return;
     }
     
     try {
       const updated = await updateProduct(id, updates);
       setProducts(products.map(p => p.id === id ? updated : p));
-      alert('Medicine updated successfully!');
+      showToast('Medicine updated successfully!', 'success');
     } catch (error) {
       console.error('Error updating product:', error);
-      alert('Failed to update medicine. Please try again.');
+      showToast('Failed to update medicine. Please try again.', 'error');
     }
   };
 
@@ -151,7 +153,7 @@ const Inventory: React.FC = () => {
   const handleExportInventory = () => {
     // Check permission
     if (!hasPermission(Permission.INVENTORY_EXPORT)) {
-      alert('You do not have permission to export inventory data.');
+      showToast('You do not have permission to export inventory data.', 'error');
       return;
     }
     
@@ -219,7 +221,7 @@ const Inventory: React.FC = () => {
           { label: 'Low Stock Alerts', value: lowStockCount.toString(), icon: 'warning', color: 'text-amber-600', bg: 'bg-amber-100', action: lowStockCount > 0 ? 'Action Needed' : 'All Good', borderColor: lowStockCount > 0 ? 'border-l-amber-500' : '' },
           { label: 'Near Expiry (< 3 mo)', value: nearExpiryCount.toString(), icon: 'event_busy', color: 'text-rose-600', bg: 'bg-rose-100', borderColor: nearExpiryCount > 0 ? 'border-l-rose-500' : '' },
         ].map((card, idx) => (
-          <div key={idx} className={`bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm ${card.borderColor || ''} ${card.borderColor ? 'border-l-4' : ''}`}>
+          <div key={idx} className={`bg-white dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm ${card.borderColor || ''} ${card.borderColor ? 'border-l-4' : ''}`}>
             <div className="flex items-center justify-between mb-3">
               <div className={`p-2 rounded-lg ${card.bg} dark:bg-opacity-20 ${card.color}`}>
                 <span className="material-symbols-outlined">{card.icon}</span>
@@ -256,9 +258,9 @@ const Inventory: React.FC = () => {
             placeholder="Search medicines..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary outline-none min-w-[200px]"
+            className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary outline-none min-w-[200px]"
           />
-          <select className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary outline-none min-w-[160px]">
+          <select className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary outline-none min-w-[160px]">
             <option>Category: All</option>
             <option>Antibiotics</option>
             <option>Painkillers</option>
@@ -289,7 +291,7 @@ const Inventory: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -323,7 +325,7 @@ const Inventory: React.FC = () => {
                     <p className="text-[10px] text-slate-500 italic leading-tight">{prod.generic}</p>
                   </td>
                   <td className="px-2 py-2 hidden lg:table-cell">
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 whitespace-nowrap">
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${getCategoryColor(prod.category).bg} ${getCategoryColor(prod.category).text}`}>
                       {prod.category}
                     </span>
                   </td>

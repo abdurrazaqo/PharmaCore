@@ -14,7 +14,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole, children 
   // Show a loading spinner while Supabase checks the session
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-surface-dark flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Checking authentication...</p>
@@ -37,7 +37,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole, children 
   // If we require a role but profile isn't loaded yet, show loading
   if (requiredRole && !profile) {
      return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="min-h-screen bg-slate-50 dark:bg-surface-dark flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Loading profile...</p>
