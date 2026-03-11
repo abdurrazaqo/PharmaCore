@@ -428,7 +428,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <th className="px-6 py-4 hidden lg:table-cell">Customer</th>
                 <th className="px-3 lg:px-6 py-4">Date & Time</th>
                 <th className="px-3 lg:px-6 py-4">Amount</th>
-                <th className="px-3 lg:px-6 py-4">Payment</th>
+                <th className="px-3 lg:px-6 py-4 hidden lg:table-cell">Payment</th>
                 <th className="px-6 py-4 hidden lg:table-cell">Status</th>
                 <th className="px-3 lg:px-6 py-4 text-right">Actions</th>
               </tr>
@@ -455,10 +455,32 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </tr>
               ) : (
                 filteredTransactions.map((tx) => {
-                  // Parse date and time
-                  const dateTimeParts = tx.dateTime.split(' at ');
-                  const datePart = dateTimeParts[0] || tx.dateTime;
-                  const timePart = dateTimeParts[1] || '';
+                  // Format date and time consistently
+                  let datePart = '';
+                  let timePart = '';
+                  
+                  try {
+                    // Try to parse the dateTime string
+                    const dateTimeStr = tx.dateTime;
+                    
+                    // Check if it contains " at " separator
+                    if (dateTimeStr.includes(' at ')) {
+                      const parts = dateTimeStr.split(' at ');
+                      datePart = parts[0];
+                      timePart = parts[1];
+                    } else {
+                      // Parse as "Jan 11, 3:45 PM" format
+                      const match = dateTimeStr.match(/^([A-Za-z]+\s+\d+),?\s+(.+)$/);
+                      if (match) {
+                        datePart = match[1];
+                        timePart = match[2];
+                      } else {
+                        datePart = dateTimeStr;
+                      }
+                    }
+                  } catch (e) {
+                    datePart = tx.dateTime;
+                  }
                   
                   return (
                 <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
@@ -476,7 +498,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </div>
                   </td>
                   <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-bold dark:text-white">₦{tx.amount.toFixed(2)}</td>
-                  <td className="px-3 lg:px-6 py-4">
+                  <td className="px-3 lg:px-6 py-4 hidden lg:table-cell">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
                       tx.paymentMethod === 'Cash' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                       tx.paymentMethod === 'Card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :

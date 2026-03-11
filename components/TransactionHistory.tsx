@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getTransactions } from '../services/database';
 import PrintReceipt from './PrintReceipt';
+import ReturnModal from './ReturnModal';
+import { useAuth, Permission } from '../contexts/AuthContext';
 
 interface TransactionHistoryProps {
   onClose: () => void;
@@ -8,9 +10,11 @@ interface TransactionHistoryProps {
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({ onClose }) => {
   const [transactions, setTransactions] = useState<any[]>([]);
+  const { hasPermission } = useAuth();
   const [filteredTransactions, setFilteredTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [printTransactionId, setPrintTransactionId] = useState<string | null>(null);
+  const [returnTransactionId, setReturnTransactionId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState<'today' | '7days' | '30days' | 'all'>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -168,13 +172,24 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ onClose }) => {
                             <p className="font-mono text-xs text-slate-500 mb-1">{tx.id}</p>
                             <p className="font-bold text-lg dark:text-white">₦{tx.amount.toFixed(2)}</p>
                           </div>
-                          <button
-                            onClick={() => setPrintTransactionId(tx.id)}
-                            className="p-2 text-slate-400 hover:text-primary transition-colors"
-                            title="Print Receipt"
-                          >
-                            <span className="material-symbols-outlined">print</span>
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {tx.status === 'Completed' && hasPermission(Permission.SALES_REFUND) && (
+                              <button
+                                onClick={() => setReturnTransactionId(tx.id)}
+                                className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                title="Process Return"
+                              >
+                                <span className="material-symbols-outlined">undo</span>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setPrintTransactionId(tx.id)}
+                              className="p-2 text-slate-400 hover:text-primary transition-colors"
+                              title="Print Receipt"
+                            >
+                              <span className="material-symbols-outlined">print</span>
+                            </button>
+                          </div>
                         </div>
                         
                         <div className="flex items-center justify-between text-xs">
@@ -260,13 +275,24 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ onClose }) => {
                             </span>
                           </td>
                           <td className="px-6 py-3 text-right">
-                            <button
-                              onClick={() => setPrintTransactionId(tx.id)}
-                              className="text-slate-400 hover:text-primary transition-colors"
-                              title="Print Receipt"
-                            >
-                              <span className="material-symbols-outlined text-xl">print</span>
-                            </button>
+                            <div className="flex items-center justify-end gap-2">
+                              {tx.status === 'Completed' && hasPermission(Permission.SALES_REFUND) && (
+                                <button
+                                  onClick={() => setReturnTransactionId(tx.id)}
+                                  className="text-slate-400 hover:text-red-500 transition-colors"
+                                  title="Process Return"
+                                >
+                                  <span className="material-symbols-outlined text-xl">undo</span>
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setPrintTransactionId(tx.id)}
+                                className="text-slate-400 hover:text-primary transition-colors"
+                                title="Print Receipt"
+                              >
+                                <span className="material-symbols-outlined text-xl">print</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -334,6 +360,17 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ onClose }) => {
         <PrintReceipt
           transactionId={printTransactionId}
           onClose={() => setPrintTransactionId(null)}
+        />
+      )}
+
+      {/* Return Modal */}
+      {returnTransactionId && (
+        <ReturnModal
+          transactionId={returnTransactionId}
+          onClose={() => {
+            setReturnTransactionId(null);
+            loadTransactions(); // Reload transactions after return
+          }}
         />
       )}
     </>

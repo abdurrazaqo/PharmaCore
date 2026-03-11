@@ -216,7 +216,7 @@ const Inventory: React.FC = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Inventory Value', value: `₦${totalValue.toFixed(2)}`, icon: 'account_balance_wallet', color: 'text-emerald-600', bg: 'bg-emerald-100' },
+          { label: 'Total Inventory Value', value: `₦${totalValue.toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, icon: 'account_balance_wallet', color: 'text-emerald-600', bg: 'bg-emerald-100' },
           { label: 'Total Products', value: totalItems.toString(), icon: 'inventory_2', color: 'text-blue-600', bg: 'bg-blue-100' },
           { label: 'Low Stock Alerts', value: lowStockCount.toString(), icon: 'warning', color: 'text-amber-600', bg: 'bg-amber-100', action: lowStockCount > 0 ? 'Action Needed' : 'All Good', borderColor: lowStockCount > 0 ? 'border-l-amber-500' : '' },
           { label: 'Near Expiry (< 3 mo)', value: nearExpiryCount.toString(), icon: 'event_busy', color: 'text-rose-600', bg: 'bg-rose-100', borderColor: nearExpiryCount > 0 ? 'border-l-rose-500' : '' },
@@ -230,7 +230,7 @@ const Inventory: React.FC = () => {
               {card.action && <span className="text-xs font-medium text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full">{card.action}</span>}
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">{card.label}</p>
-            <h3 className={`text-2xl font-bold mt-1 ${card.color === 'text-rose-600' ? 'text-rose-600' : ''}`}>{card.value}</h3>
+            <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold mt-1 break-words ${card.color === 'text-rose-600' ? 'text-rose-600' : ''}`}>{card.value}</h3>
           </div>
         ))}
       </div>
