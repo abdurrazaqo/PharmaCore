@@ -10,6 +10,7 @@ import { getCategoryColor } from '../utils/categoryColors';
 
 const Inventory: React.FC = () => {
   const [filter, setFilter] = useState('All');
+  const [categoryFilter, setCategoryFilter] = useState('All');
   const [products, setProducts] = useState<Product[]>([]);
   const { showToast } = useToast();
   const { hasPermission, profile } = useAuth();
@@ -19,7 +20,37 @@ const Inventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const itemsPerPage = 10;
+
+  // Lifted Global State for Selectors
+  const [categories, setCategories] = useState<string[]>(() => {
+    const saved = localStorage.getItem('productCategories');
+    return saved ? JSON.parse(saved) : ['Antibiotics', 'Painkillers', 'Cardiovascular', 'Respiratory', 'Diabetes', 'Gastrointestinal', 'Supplements', 'Antidepressants', 'Cosmetic', 'Medical Device'];
+  });
+
+  const [dosageForms, setDosageForms] = useState<string[]>(() => {
+    const saved = localStorage.getItem('productDosageForms');
+    return saved ? JSON.parse(saved) : ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Cream', 'Drops', 'Ointment', 'Suspension', 'Inhaler', 'Suppository', 'None'];
+  });
+
+  const [units, setUnits] = useState<string[]>(() => {
+    const saved = localStorage.getItem('productUnits');
+    return saved ? JSON.parse(saved) : ['Unit', 'Box', 'Bottle', 'Strip', 'Piece', 'Pack', 'Tube', 'Vial', 'Ampoule'];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('productCategories', JSON.stringify(categories));
+  }, [categories]);
+
+  useEffect(() => {
+    localStorage.setItem('productDosageForms', JSON.stringify(dosageForms));
+  }, [dosageForms]);
+
+  useEffect(() => {
+    localStorage.setItem('productUnits', JSON.stringify(units));
+  }, [units]);
 
   useEffect(() => {
     loadProducts();
@@ -56,20 +87,23 @@ const Inventory: React.FC = () => {
     }
   };
 
-  const handleDeleteProduct = async (id: string) => {
+  const requestDeleteProduct = (id: string) => {
     if (!hasPermission(Permission.INVENTORY_DELETE)) {
       showToast('You do not have permission to delete products.', 'error');
       return;
     }
+    setProductToDelete(id);
+  };
+
+  const executeDeleteProduct = async () => {
+    if (!productToDelete) return;
     
-    if (!confirm('Are you sure you want to delete this medicine? This action cannot be undone.')) {
-      return;
-    }
-    
+    setIsDeleting(true);
     try {
-      await deleteProduct(id);
-      setProducts(products.filter(p => p.id !== id));
+      await deleteProduct(productToDelete);
+      setProducts(products.filter(p => p.id !== productToDelete));
       showToast('Medicine deleted successfully!', 'success');
+      setProductToDelete(null);
       await loadProducts(); // Reload to ensure sync
     } catch (error: any) {
       console.error('Error deleting product:', error);
@@ -78,6 +112,9 @@ const Inventory: React.FC = () => {
       } else {
         showToast(`Failed to delete medicine: ${error.message || 'Please try again.'}`, 'error');
       }
+      setProductToDelete(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -108,7 +145,11 @@ const Inventory: React.FC = () => {
   };
 
   const filteredProducts = products.filter(prod => {
-    // Apply filter
+    // Apply category filter
+    if (categoryFilter !== 'All' && prod.category !== categoryFilter) {
+      return false;
+    }
+    // Apply status filter
     if (filter === 'Low Stock') {
       // Low stock = 25% or less of last restock quantity remaining
       const percentageRemaining = (prod.totalUnits / prod.lastRestockQuantity) * 100;
@@ -131,7 +172,7 @@ const Inventory: React.FC = () => {
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       if (!prod.name.toLowerCase().includes(search) && 
-          !prod.generic.toLowerCase().includes(search) &&
+          !(prod.brandName && prod.brandName.toLowerCase().includes(search)) &&
           !prod.batchNo.toLowerCase().includes(search)) {
         return false;
       }
@@ -145,10 +186,10 @@ const Inventory: React.FC = () => {
   const endIndex = startIndex + itemsPerPage;
   const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
-  // Reset to page 1 when filter or search changes
+  // Reset to page 1 when filter, category filter, or search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, searchTerm]);
+  }, [filter, categoryFilter, searchTerm]);
 
   const handleExportInventory = () => {
     // Check permission
@@ -158,7 +199,7 @@ const Inventory: React.FC = () => {
     }
     
     // Create CSV content
-    const headers = ['Medicine Name', 'Generic Name', 'Category', 'Batch No', 'Barcode', 'Expiry Date', 'Total Units', 'Cost Price (₦)', 'Selling Price (₦)', 'Stock Status'];
+    const headers = ['Medicine Name', 'Brand Name', 'Dosage Form', 'Strength', 'Category', 'Unit', 'Batch No', 'Barcode', 'Mfg Date', 'Expiry Date', 'Total Units', 'Cost Price (₦)', 'Selling Price (₦)', 'Stock Status'];
     
     const rows = filteredProducts.map(prod => {
       const percentageRemaining = (prod.totalUnits / prod.lastRestockQuantity) * 100;
@@ -166,10 +207,14 @@ const Inventory: React.FC = () => {
       
       return [
         prod.name,
-        prod.generic,
+        prod.brandName || 'N/A',
+        prod.dosageForm || 'N/A',
+        prod.strength || 'N/A',
         prod.category,
+        prod.unit || 'Unit',
         prod.batchNo,
         prod.barcode || 'N/A',
+        prod.manufacturingDate || 'N/A',
         prod.expiryDate,
         prod.totalUnits,
         prod.costPrice?.toFixed(2) || '0.00',
@@ -212,8 +257,9 @@ const Inventory: React.FC = () => {
   }).length;
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-      {/* Summary Cards */}
+    <>
+      <div className="p-8 max-w-[1400px] mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+        {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Inventory Value', value: `₦${totalValue.toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, icon: 'account_balance_wallet', color: 'text-emerald-600', bg: 'bg-emerald-100' },
@@ -260,10 +306,15 @@ const Inventory: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary outline-none min-w-[200px]"
           />
-          <select className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary outline-none min-w-[160px]">
-            <option>Category: All</option>
-            <option>Antibiotics</option>
-            <option>Painkillers</option>
+          <select 
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary outline-none min-w-[160px] "
+          >
+            <option value="All">Category: All</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
           </select>
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
             {['All', 'Low Stock', 'Out of Stock', 'Near Expiry'].map((tab) => (
@@ -296,12 +347,12 @@ const Inventory: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Medicine</th>
-                <th className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden lg:table-cell">Category</th>
-                <th className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Batch No</th>
-                <th className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Expiry</th>
-                <th className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-center">Stock</th>
-                <th className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Actions</th>
+                <th className="px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Product Item</th>
+                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 hidden lg:table-cell">Category</th>
+                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 text-center">Stock Level</th>
+                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Pricing</th>
+                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Batch & Expiry</th>
+                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -320,36 +371,51 @@ const Inventory: React.FC = () => {
               ) : (
                 paginatedProducts.map((prod) => (
                 <tr key={prod.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                  <td className="px-3 py-2">
-                    <p className="font-semibold text-xs leading-tight">{prod.name}</p>
-                    <p className="text-[10px] text-slate-500 italic leading-tight">{prod.generic}</p>
+                  <td className="px-2 py-2">
+                    <p className="font-bold text-xs leading-tight text-slate-800 dark:text-slate-200">
+                      {prod.brandName ? (
+                        <>{prod.brandName} {prod.strength ? <span className="opacity-80 font-medium">- {prod.strength}</span> : ''}</>
+                      ) : (
+                        <>{prod.name} {prod.strength ? <span className="opacity-80 font-medium">- {prod.strength}</span> : ''}</>
+                      )}
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-medium mt-0.5 leading-tight">
+                      {prod.name} {prod.dosageForm ? <span className="text-slate-400 dark:text-slate-500">• {prod.dosageForm}</span> : ''}
+                    </p>
                   </td>
-                  <td className="px-2 py-2 hidden lg:table-cell">
+                  <td className="px-1 md:px-2 py-2 hidden lg:table-cell">
                     <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${getCategoryColor(prod.category).bg} ${getCategoryColor(prod.category).text}`}>
                       {prod.category}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-xs font-mono text-slate-600 dark:text-slate-400">{prod.batchNo}</td>
-                  <td className="px-2 py-2">
-                    <div className="flex flex-col">
-                      <span className={`text-xs font-medium leading-tight ${prod.expiryMonthsLeft === 'EXPIRED' ? 'text-rose-600 font-bold' : ''}`}>{prod.expiryDate}</span>
-                      <span className={`text-[9px] leading-tight ${prod.expiryMonthsLeft === 'EXPIRED' ? 'text-rose-600 font-bold' : 'text-slate-400'}`}>{prod.expiryMonthsLeft}</span>
-                    </div>
-                  </td>
-                  <td className="px-2 py-2 text-center">
-                    <div className="flex items-center gap-2 justify-center">
-                      <div className="hidden lg:block flex-1 max-w-[80px] h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <td className="px-1 md:px-2 py-2 text-center">
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <span className={`text-xs font-bold whitespace-nowrap ${((prod.totalUnits / prod.lastRestockQuantity) * 100) <= 25 ? 'text-amber-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                        {prod.totalUnits} <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 hidden xl:inline">{prod.unit || 'Unit'}</span>
+                      </span>
+                      <div className="hidden lg:block w-full max-w-[80px] h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div 
                           className={`h-full rounded-full ${((prod.totalUnits / prod.lastRestockQuantity) * 100) <= 25 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
                           style={{ width: `${Math.min(100, (prod.totalUnits / prod.lastRestockQuantity) * 100)}%` }}
                         ></div>
                       </div>
-                      <span className={`text-xs font-bold whitespace-nowrap ${((prod.totalUnits / prod.lastRestockQuantity) * 100) <= 25 ? 'text-amber-600' : ''}`}>
-                        {prod.totalUnits}
-                      </span>
                     </div>
                   </td>
-                  <td className="px-2 py-2 text-right">
+                  <td className="px-1 md:px-2 py-2">
+                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                      ₦{prod.price?.toLocaleString('en-NG', { maximumFractionDigits: 0 }) || '0'}
+                    </span>
+                  </td>
+                  <td className="px-1 md:px-2 py-2">
+                    <div className="flex flex-col">
+                      <span className={`text-xs font-medium leading-tight ${prod.expiryMonthsLeft === 'EXPIRED' ? 'text-rose-600 font-bold' : 'text-slate-700 dark:text-slate-300'}`}>
+                        {prod.expiryDate && !isNaN(new Date(prod.expiryDate).getTime()) ? new Date(prod.expiryDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : prod.expiryDate}
+                        <span className={`ml-1.5 text-[9px] ${prod.expiryMonthsLeft === 'EXPIRED' ? '' : 'text-slate-400 dark:text-slate-500'}`}>({prod.expiryMonthsLeft})</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[120px]" title={prod.batchNo}>Batch: {prod.batchNo}</span>
+                    </div>
+                  </td>
+                  <td className="px-1 md:px-2 py-2 text-right">
                     <div className="flex justify-end gap-1">
                       {hasPermission(Permission.INVENTORY_EDIT) && (
                         <button 
@@ -362,7 +428,7 @@ const Inventory: React.FC = () => {
                       )}
                       {hasPermission(Permission.INVENTORY_DELETE) && (
                         <button 
-                          onClick={() => handleDeleteProduct(prod.id)}
+                          onClick={() => requestDeleteProduct(prod.id)}
                           className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
                           title="Delete Medicine"
                         >
@@ -416,11 +482,18 @@ const Inventory: React.FC = () => {
           )}
         </div>
       </div>
+      </div>
 
       <AddProductModal 
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddProduct}
+        categories={categories}
+        setCategories={setCategories}
+        dosageForms={dosageForms}
+        setDosageForms={setDosageForms}
+        units={units}
+        setUnits={setUnits}
       />
 
       <EditProductModal 
@@ -431,8 +504,54 @@ const Inventory: React.FC = () => {
         }}
         onUpdate={handleUpdateProduct}
         product={selectedProduct}
+        categories={categories}
+        setCategories={setCategories}
+        dosageForms={dosageForms}
+        setDosageForms={setDosageForms}
+        units={units}
+        setUnits={setUnits}
       />
-    </div>
+
+      {/* Delete Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-surface-dark rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-4 mx-auto">
+                <span className="material-symbols-outlined text-rose-600 text-2xl">delete_forever</span>
+              </div>
+              <h3 className="text-lg font-bold text-center text-slate-800 dark:text-white mb-2">Delete Medicine?</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-center text-sm mb-6">
+                Are you sure you want to delete this medicine? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setProductToDelete(null)}
+                  className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors"
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeDeleteProduct}
+                  className="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <>
+                      <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

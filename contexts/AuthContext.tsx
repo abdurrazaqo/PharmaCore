@@ -255,9 +255,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Inventory - view only
         Permission.INVENTORY_VIEW,
         
-        // Sales - create only
+        // Sales - create and refund
         Permission.SALES_CREATE,
         Permission.SALES_VIEW_HISTORY,
+        Permission.SALES_REFUND,
         
         // Customers - view and add only
         Permission.CUSTOMER_VIEW,

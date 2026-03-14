@@ -5,10 +5,14 @@ import Logo from './Logo';
 interface ReceiptProps {
   transaction: ReceiptTransaction;
   width?: ReceiptWidth;
+  tenantName?: string;
+  branchName?: string;
+  address?: string;
+  phone?: string;
 }
 
 const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
-  ({ transaction, width = '80mm' }, ref) => {
+  ({ transaction, width = '80mm', tenantName, branchName, address, phone }, ref) => {
     const formatCurrency = (amount: number) => `₦${amount.toFixed(2)}`;
     const formatDateTime = (dateStr: string) => {
       const date = new Date(dateStr);
@@ -35,10 +39,10 @@ const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
       >
         {/* Header */}
         <div className="text-center mb-4 break-inside-avoid">
-          <div className="font-bold text-lg mb-1">Main Pharmacy</div>
-          <div className="text-xs mb-2">Terminal #01</div>
-          <div className="text-xs">123 Medical Plaza, Lagos</div>
-          <div className="text-xs">Tel: +234 800 123 4567</div>
+          <div className="font-bold text-lg mb-1">{tenantName || 'Main Pharmacy'}</div>
+          <div className="text-xs mb-2">{branchName || 'Terminal #01'}</div>
+          {address && <div className="text-xs">{address}</div>}
+          {phone && <div className="text-xs">Tel: {phone}</div>}
         </div>
 
         {/* Divider */}

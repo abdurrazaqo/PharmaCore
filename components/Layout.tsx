@@ -39,9 +39,40 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const mainContentRef = React.useRef<HTMLDivElement>(null);
 
   // Extract active page from current URL
   const activePage = location.pathname.split('/')[1] as Page || Page.DASHBOARD;
+
+  // Keyboard arrow navigation for scrolling
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle arrow keys on desktop (not mobile)
+      if (window.innerWidth < 1024) return;
+      
+      // Don't interfere if user is typing in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      const scrollAmount = 100; // pixels to scroll
+      const mainContent = mainContentRef.current;
+      
+      if (!mainContent) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        mainContent.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        mainContent.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     // Apply theme based on mode
@@ -146,7 +177,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* Mobile Header */}
-        <header className="h-14 lg:h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-surface-dark flex items-center justify-between px-4 lg:px-8 sticky top-0" style={{ paddingTop: 'env(safe-area-inset-top)', position: 'sticky', zIndex: 10 }}>
+        <header className="h-14 lg:h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-surface-dark flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="flex items-center gap-3">
             {/* Mobile Menu Button */}
             <button 
@@ -228,8 +259,8 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
           </div>
         </header>
 
-        {/* Content - no bottom padding needed since bottom nav is removed */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Content - with bottom padding on mobile for bottom nav */}
+        <div ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden pb-16 lg:pb-0">
           <Outlet />
         </div>
       </main>
@@ -352,6 +383,37 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
         isOpen={isChangePasswordOpen}
         onClose={() => setIsChangePasswordOpen(false)}
       />
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 w-full bg-white dark:bg-surface-dark border-t border-slate-200 dark:border-slate-800 flex justify-between items-center px-6 py-2 pb-safe z-40 shadow-[0_-5px_15px_-10px_rgba(0,0,0,0.1)]">
+        {[
+          { id: Page.DASHBOARD, icon: 'dashboard', label: 'Home' },
+          { id: Page.POS, icon: 'point_of_sale', label: 'POS' },
+          { id: Page.INVENTORY, icon: 'inventory_2', label: 'Stock' },
+        ].map((item) => {
+          const isActive = activePage === item.id || location.pathname === '/' + item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => navigate('/' + item.id)}
+              className={`flex flex-col items-center justify-center gap-1 min-w-[64px] transition-colors p-1 rounded-lg ${
+                isActive 
+                  ? 'text-primary' 
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+              }`}
+            >
+              <div className={`flex items-center justify-center w-12 h-8 rounded-full transition-all ${isActive ? 'bg-primary/10' : 'bg-transparent'}`}>
+                <span className={`material-symbols-outlined ${isActive ? 'filled font-bold' : ''}`}>
+                  {item.icon}
+                </span>
+              </div>
+              <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 };

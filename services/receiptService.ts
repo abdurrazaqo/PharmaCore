@@ -49,7 +49,7 @@ export const getTransactionForReceipt = async (transactionId: string): Promise<R
       id: transaction.id,
       receiptNumber: transaction.id,
       createdAt: transaction.created_at,
-      cashier: 'Pharm. Abdurrazaq O.', // Can be fetched from auth if needed
+      cashier: transaction.cashier || 'Staff',
       patientName: transaction.customer,
       items,
       subtotal,

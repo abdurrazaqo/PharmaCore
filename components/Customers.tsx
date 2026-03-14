@@ -3,10 +3,11 @@ import React, { useState, useEffect } from 'react';
 import AddCustomerModal from './AddCustomerModal';
 import EditCustomerModal from './EditCustomerModal';
 import CustomerHistoryModal from './CustomerHistoryModal';
-import BalanceHistoryModal from './BalanceHistoryModal';
+import PatientBalanceModal from './PatientBalanceModal';
 import { getCustomers, addCustomer, updateCustomer, deleteCustomer } from '../services/database';
 import { supabase } from '../services/supabaseClient';
 import { useToast } from './ToastContainer';
+import { useAuth } from '../contexts/AuthContext';
 
 const Customers: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -17,16 +18,63 @@ const Customers: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
-  const [isBalanceHistoryModalOpen, setIsBalanceHistoryModalOpen] = useState(false);
+  const [balanceModalTab, setBalanceModalTab] = useState<'update' | 'history'>('update');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [referenceBalances, setReferenceBalances] = useState<Record<string, number>>({});
   const { showToast } = useToast();
+  const { profile } = useAuth();
 
   const itemsPerPage = 15;
 
   useEffect(() => {
     loadCustomers();
   }, []);
+
+  useEffect(() => {
+    if (paginatedCustomers.length > 0) {
+      loadReferenceBalances();
+    }
+  }, [currentPage, filteredCustomers]);
+
+  const loadReferenceBalances = async () => {
+    try {
+      const ids = paginatedCustomers.map(c => c.id);
+      if (ids.length === 0) return;
+
+      const { data, error } = await supabase!
+        .from('balance_history')
+        .select('customer_id, new_balance, change_type')
+        .in('customer_id', ids)
+        .in('change_type', ['add', 'set'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Extract the LATEST add/set for each customer
+      const lastAdds: Record<string, number> = {};
+      data?.forEach(record => {
+        if (!lastAdds[record.customer_id]) {
+          lastAdds[record.customer_id] = record.new_balance;
+        }
+      });
+
+      setReferenceBalances(prev => ({ ...prev, ...lastAdds }));
+    } catch (error) {
+      console.error('Error loading reference balances:', error);
+    }
+  };
+
+  const getBalanceColor = (customer: any) => {
+    if (customer.balance === 0) return 'text-slate-900 dark:text-white';
+    
+    const reference = referenceBalances[customer.id];
+    // If no record found, we assume the current balance is the reference (Green)
+    if (reference === undefined || reference === 0) return 'text-emerald-500';
+
+    const threshold = reference * 0.3;
+    return customer.balance < threshold ? 'text-rose-500 font-black' : 'text-emerald-500';
+  };
 
   useEffect(() => {
     // Filter customers based on search term
@@ -119,6 +167,7 @@ const Customers: React.FC = () => {
 
   const handleUpdateBalance = (customer: any) => {
     setSelectedCustomer(customer);
+    setBalanceModalTab('update');
     setIsBalanceModalOpen(true);
   };
 
@@ -144,8 +193,12 @@ const Customers: React.FC = () => {
           change_amount: changeAmount,
           change_type: action,
           reason: reason,
-          created_by: 'Pharm. Abdurrazaq O.'
+          created_by: profile?.display_name || 'Staff'
         }]);
+
+      if (action === 'add' || action === 'set') {
+        setReferenceBalances(prev => ({ ...prev, [id]: newBalance }));
+      }
 
       showToast('Balance updated successfully!', 'success');
     } catch (error) {
@@ -156,7 +209,8 @@ const Customers: React.FC = () => {
 
   const handleViewBalanceHistory = (customer: any) => {
     setSelectedCustomer(customer);
-    setIsBalanceHistoryModalOpen(true);
+    setBalanceModalTab('history');
+    setIsBalanceModalOpen(true);
   };
 
   return (
@@ -245,7 +299,7 @@ const Customers: React.FC = () => {
                   <td className="px-2 py-2">
                     <button
                       onClick={() => handleUpdateBalance(customer)}
-                      className={`text-xs font-bold hover:underline ${customer.balance > 0 ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}
+                      className={`text-xs font-bold hover:underline transition-colors ${getBalanceColor(customer)}`}
                     >
                       ₦{customer.balance.toFixed(2)}
                     </button>
@@ -351,107 +405,13 @@ const Customers: React.FC = () => {
         customerName={selectedCustomer?.name || ''}
       />
 
-      <BalanceHistoryModal 
-        isOpen={isBalanceHistoryModalOpen}
-        onClose={() => setIsBalanceHistoryModalOpen(false)}
-        customerId={selectedCustomer?.id || ''}
-        customerName={selectedCustomer?.name || ''}
+      <PatientBalanceModal 
+        isOpen={isBalanceModalOpen}
+        onClose={() => setIsBalanceModalOpen(false)}
+        customer={selectedCustomer}
+        onUpdateBalance={handleBalanceUpdate}
+        initialTab={balanceModalTab}
       />
-
-      {/* Balance Update Modal */}
-      {isBalanceModalOpen && selectedCustomer && (
-        <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
-          <div className="modal-content bg-white dark:bg-surface-dark rounded-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold dark:text-white">Update Balance</h3>
-              <button
-                onClick={() => handleViewBalanceHistory(selectedCustomer)}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
-              >
-                <span className="material-symbols-outlined text-sm">history</span>
-                View History
-              </button>
-            </div>
-            <p className="text-sm text-slate-500 mb-2">Patient: {selectedCustomer.name}</p>
-            <p className="text-sm text-slate-500 mb-4">Current Balance: ₦{selectedCustomer.balance.toFixed(2)}</p>
-            
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const action = formData.get('action') as string;
-              const amount = parseFloat(formData.get('amount') as string);
-              const reason = formData.get('reason') as string;
-              
-              if (isNaN(amount) || amount <= 0) {
-                showToast('Please enter a valid amount', 'error');
-                return;
-              }
-
-              let newBalance = selectedCustomer.balance;
-              if (action === 'add') {
-                newBalance += amount;
-              } else if (action === 'subtract') {
-                newBalance = Math.max(0, newBalance - amount);
-              } else if (action === 'set') {
-                newBalance = amount;
-              }
-
-              handleBalanceUpdate(selectedCustomer.id, newBalance, action, amount, reason);
-              setIsBalanceModalOpen(false);
-            }}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2 dark:text-white">Action</label>
-                  <select name="action" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-800 dark:text-white">
-                    <option value="add">Add to Balance</option>
-                    <option value="subtract">Subtract from Balance</option>
-                    <option value="set">Set Balance</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2 dark:text-white">Amount (₦)</label>
-                  <input
-                    type="number"
-                    name="amount"
-                    step="0.01"
-                    min="0"
-                    required
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-800 dark:text-white"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 dark:text-white">Reason (Optional)</label>
-                  <textarea
-                    name="reason"
-                    rows={2}
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-800 dark:text-white resize-none"
-                    placeholder="e.g., Payment received, Adjustment, etc."
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsBalanceModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
-                >
-                  Update Balance
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

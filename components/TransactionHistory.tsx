@@ -198,17 +198,27 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ onClose }) => {
                             {timePart && <span className="text-slate-500">{timePart}</span>}
                           </div>
                           
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
-                            tx.paymentMethod === 'Cash' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                            tx.paymentMethod === 'Card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                            tx.paymentMethod === 'Transfer' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                            'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
-                          }`}>
-                            <span className="material-symbols-outlined text-xs">
-                              {tx.paymentMethod === 'Cash' ? 'payments' : tx.paymentMethod === 'Card' ? 'credit_card' : tx.paymentMethod === 'Transfer' ? 'swap_horiz' : 'help'}
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+                              tx.paymentMethod === 'Cash' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                              tx.paymentMethod === 'Card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                              tx.paymentMethod === 'Transfer' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                              'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                            }`}>
+                              <span className="material-symbols-outlined text-xs">
+                                {tx.paymentMethod === 'Cash' ? 'payments' : tx.paymentMethod === 'Card' ? 'credit_card' : tx.paymentMethod === 'Transfer' ? 'swap_horiz' : 'help'}
+                              </span>
+                              {tx.paymentMethod || 'Cash'}
                             </span>
-                            {tx.paymentMethod || 'Cash'}
-                          </span>
+                            
+                            <span className={`inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-semibold ${
+                              tx.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400' :
+                              tx.status === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-400' :
+                              'bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400'
+                            }`}>
+                              {tx.status}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );

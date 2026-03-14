@@ -42,10 +42,14 @@ export interface Transaction {
 export interface Product {
   id: string;
   name: string;
-  generic: string;
+  brandName?: string;
   category: string;
+  dosageForm?: string;
+  strength?: string;
+  unit: string;
   batchNo: string;
   barcode?: string;
+  manufacturingDate?: string;
   expiryDate: string;
   expiryMonthsLeft: string;
   stockLevel: number;

@@ -6,7 +6,7 @@ const toCamelCase = (obj: any): any => {
   if (Array.isArray(obj)) {
     return obj.map(toCamelCase);
   }
-  if (obj !== null && obj.constructor === Object) {
+  if (obj !== null && obj !== undefined && obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
       const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
       result[camelKey] = toCamelCase(obj[key]);
@@ -21,8 +21,10 @@ const toSnakeCase = (obj: any): any => {
   if (Array.isArray(obj)) {
     return obj.map(toSnakeCase);
   }
-  if (obj !== null && obj.constructor === Object) {
+  if (obj !== null && obj !== undefined && obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
+      // Skip undefined values so they don't break Supabase
+      if (obj[key] === undefined) return result;
       const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
       result[snakeKey] = toSnakeCase(obj[key]);
       return result;

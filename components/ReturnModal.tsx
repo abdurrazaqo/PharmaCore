@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../services/supabaseClient';
 import { useToast } from './ToastContainer';
 
@@ -103,7 +104,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
   const handleProcessReturn = async () => {
     try {
       // Check if any items are selected for return
-      const itemsToReturn = Object.entries(returnQuantities).filter(([_, qty]) => qty > 0);
+      const itemsToReturn = Object.entries(returnQuantities).filter(([_, qty]) => (qty as number) > 0);
       
       if (itemsToReturn.length === 0) {
         showToast('Please select at least one item to return.', 'warning');
@@ -113,12 +114,13 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
       setProcessing(true);
 
       // Process each returned item
-      for (const [itemId, returnQty] of itemsToReturn) {
+      for (const [itemId, returnQtyObj] of itemsToReturn) {
+        const returnQty = returnQtyObj as number;
         const item = items.find(i => i.id === itemId);
         if (!item) continue;
 
         // Get current stock
-        const { data: product, error: fetchError } = await supabase!
+        const { data: product, error: fetchError } = await (supabase as any)
           .from('products')
           .select('total_units')
           .eq('id', item.productId)
@@ -127,7 +129,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
         if (fetchError) throw fetchError;
 
         // Update product stock (add back returned quantity)
-        const { error: stockError } = await supabase!
+        const { error: stockError } = await (supabase as any)
           .from('products')
           .update({
             total_units: product.total_units + returnQty
@@ -140,11 +142,11 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
       // Calculate refund amount
       const refundAmount = itemsToReturn.reduce((sum, [itemId, returnQty]) => {
         const item = items.find(i => i.id === itemId);
-        return sum + (item ? item.unitPrice * returnQty : 0);
+        return sum + (item ? item.unitPrice * (returnQty as number) : 0);
       }, 0);
 
       // Update transaction status to Refunded
-      const { error: txError } = await supabase!
+      const { error: txError } = await (supabase as any)
         .from('transactions')
         .update({ status: 'Refunded' })
         .eq('id', transactionId);
@@ -165,11 +167,11 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
 
   const totalRefund = Object.entries(returnQuantities).reduce((sum, [itemId, returnQty]) => {
     const item = items.find(i => i.id === itemId);
-    return sum + (item ? item.unitPrice * returnQty : 0);
+    return sum + (item ? item.unitPrice * (returnQty as number) : 0);
   }, 0);
 
-  return (
-    <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
@@ -270,7 +272,8 @@ const ReturnModal: React.FC<ReturnModalProps> = ({ transactionId, onClose, onSuc
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

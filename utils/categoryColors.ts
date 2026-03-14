@@ -56,6 +56,18 @@ export const CATEGORY_COLORS: Record<string, { bg: string; text: string; chart: 
     chart: '#06B6D4', // cyan-500
     light: 'rgba(6, 182, 212, 0.15)'
   },
+  'Supplements': {
+    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
+    text: 'text-emerald-700 dark:text-emerald-400',
+    chart: '#10B981', // emerald-500
+    light: 'rgba(16, 185, 129, 0.15)'
+  },
+  'Antidepressants': {
+    bg: 'bg-fuchsia-100 dark:bg-fuchsia-900/30',
+    text: 'text-fuchsia-700 dark:text-fuchsia-400',
+    chart: '#D946EF', // fuchsia-500
+    light: 'rgba(217, 70, 239, 0.15)'
+  },
   'Other': {
     bg: 'bg-slate-100 dark:bg-slate-800/30',
     text: 'text-slate-700 dark:text-slate-400',
@@ -64,9 +76,12 @@ export const CATEGORY_COLORS: Record<string, { bg: string; text: string; chart: 
   }
 };
 
-// Get color for a category (with fallback to 'Other')
+// Get color for a category (with fallback to deterministically generated color)
 export const getCategoryColor = (category: string) => {
-  return CATEGORY_COLORS[category] || CATEGORY_COLORS['Other'];
+  if (CATEGORY_COLORS[category]) {
+    return CATEGORY_COLORS[category];
+  }
+  return generateCategoryColor(category);
 };
 
 // Get all available categories
@@ -82,6 +97,9 @@ export const generateCategoryColor = (category: string): { bg: string; text: str
     { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', chart: '#F59E0B', light: 'rgba(245, 158, 11, 0.15)' },
     { bg: 'bg-rose-100 dark:bg-rose-900/30', text: 'text-rose-700 dark:text-rose-400', chart: '#F43F5E', light: 'rgba(244, 63, 94, 0.15)' },
     { bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-400', chart: '#8B5CF6', light: 'rgba(139, 92, 246, 0.15)' },
+    { bg: 'bg-sky-100 dark:bg-sky-900/30', text: 'text-sky-700 dark:text-sky-400', chart: '#0EA5E9', light: 'rgba(14, 165, 233, 0.15)' },
+    { bg: 'bg-pink-100 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-400', chart: '#EC4899', light: 'rgba(236, 72, 153, 0.15)' },
+    { bg: 'bg-stone-100 dark:bg-stone-800/60', text: 'text-stone-700 dark:text-stone-400', chart: '#78716C', light: 'rgba(120, 113, 108, 0.15)' }
   ];
   
   // Simple hash function
