@@ -5,6 +5,7 @@ import Receipt from './Receipt';
 import { ReceiptTransaction, ReceiptWidth } from '../types/receipt';
 import { getTransactionForReceipt } from '../services/receiptService';
 import { useAuth } from '../contexts/AuthContext';
+import { printHTML, generateReceiptHTML } from '../utils/printUtils';
 
 interface PrintReceiptProps {
   transactionId: string;
@@ -18,25 +19,6 @@ const PrintReceipt: React.FC<PrintReceiptProps> = ({ transactionId, onClose }) =
   const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
 
-  const handlePrint = useReactToPrint({
-    contentRef: receiptRef,
-    documentTitle: `Receipt-${transactionId}`,
-    pageStyle: `
-      @page {
-        size: 80mm;
-        margin: 0;
-      }
-      @media print {
-        html, body {
-          height: auto !important;
-          overflow: visible !important;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-      }
-    `,
-  });
-
   useEffect(() => {
     loadTransaction();
   }, [transactionId]);
@@ -45,9 +27,9 @@ const PrintReceipt: React.FC<PrintReceiptProps> = ({ transactionId, onClose }) =
     try {
       setLoading(true);
       setError(null);
-      console.log('Loading transaction:', transactionId);
+      // console.log('Loading transaction:', transactionId);
       const data = await getTransactionForReceipt(transactionId);
-      console.log('Transaction data loaded:', data);
+      // console.log('Transaction data loaded:', data);
       if (data) {
         setTransaction(data);
       } else {
@@ -62,19 +44,9 @@ const PrintReceipt: React.FC<PrintReceiptProps> = ({ transactionId, onClose }) =
   };
 
   const onPrintClick = () => {
-    console.log('Print button clicked');
-    console.log('Receipt ref:', receiptRef.current);
-    console.log('Transaction:', transaction);
-    
-    if (!receiptRef.current) {
-      console.error('Receipt ref is null');
-      return;
-    }
-    
-    if (handlePrint) {
-      handlePrint();
-    } else {
-      console.error('handlePrint is not available');
+    if (transaction) {
+      const html = generateReceiptHTML(transaction, profile);
+      printHTML(html, `Receipt-${transactionId}`, '@page { margin: 0; }');
     }
   };
 

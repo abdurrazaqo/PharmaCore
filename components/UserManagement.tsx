@@ -17,19 +17,41 @@ const UserManagement: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [editFormData, setEditFormData] = useState({
     display_name: '',
-    role: UserRole.STAFF,
+    role: UserRole.CASHIER,
     is_suspended: false
+  });
+
+  const [branches, setBranches] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newUserForm, setNewUserForm] = useState({
+    email: '',
+    password: '',
+    display_name: '',
+    role: UserRole.CASHIER,
+    branch_id: ''
   });
 
   useEffect(() => {
     if (hasPermission(Permission.USERS_VIEW)) {
       loadUsers();
+      loadBranches();
     }
   }, []);
 
   const showAlert = (title: string, message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
     setAlertConfig({ title, message, type });
     setShowAlertModal(true);
+  };
+
+  const loadBranches = async () => {
+    try {
+      if (!profile?.tenant_id) return;
+      const { data, error } = await supabase!.from('branches').select('*').eq('tenant_id', profile.tenant_id);
+      if (error) throw error;
+      setBranches(data || []);
+    } catch (error) {
+      console.error('Error loading branches:', error);
+    }
   };
 
   const loadUsers = async () => {
@@ -81,12 +103,11 @@ const UserManagement: React.FC = () => {
 
     try {
       if (confirmAction.type === 'delete') {
-        const { error } = await supabase!
-          .from('users')
-          .delete()
-          .eq('id', confirmAction.userId);
+        const { data, error } = await supabase!.functions.invoke('delete-user', {
+          body: { user_id: confirmAction.userId }
+        });
 
-        if (error) throw error;
+        if (error || data?.error) throw error || new Error(data?.error);
 
         setUsers(users.filter(u => u.id !== confirmAction.userId));
         showAlert('Success', 'User deleted successfully', 'success');
@@ -110,6 +131,37 @@ const UserManagement: React.FC = () => {
     } finally {
       setShowConfirmModal(false);
       setConfirmAction(null);
+    }
+  };
+
+  const handleAddUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile?.tenant_id) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      const payload = {
+        ...newUserForm,
+        tenant_id: profile.tenant_id,
+        branch_id: newUserForm.branch_id || (profile.role === UserRole.BRANCH_ADMIN ? profile.branch_id : null)
+      };
+
+      const { data, error } = await supabase!.functions.invoke('create-user', {
+        body: payload
+      });
+
+      if (error || data?.error) throw error || new Error(data?.error);
+
+      showAlert('Success', 'User created successfully', 'success');
+      setShowAddUserModal(false);
+      setNewUserForm({ email: '', password: '', display_name: '', role: UserRole.CASHIER, branch_id: '' });
+      loadUsers(); 
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      showAlert('Error', error.message || 'Failed to create user', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -162,7 +214,10 @@ const UserManagement: React.FC = () => {
         return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
       case UserRole.TENANT_ADMIN:
         return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      case UserRole.STAFF:
+      case UserRole.BRANCH_ADMIN:
+      case UserRole.PHARMACIST:
+      case UserRole.PHARMACY_TECHNICIAN:
+      case UserRole.CASHIER:
         return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
       default:
         return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
@@ -257,7 +312,7 @@ const UserManagement: React.FC = () => {
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-600 dark:text-slate-400">Staff</span>
-              <span className="font-bold">{users.filter((u: any) => u.role === UserRole.STAFF).length}</span>
+              <span className="font-bold">{users.filter((u: any) => [UserRole.BRANCH_ADMIN, UserRole.PHARMACIST, UserRole.PHARMACY_TECHNICIAN, UserRole.CASHIER].includes(u.role)).length}</span>
             </div>
           </div>
         </div>
@@ -369,188 +424,156 @@ const UserManagement: React.FC = () => {
       </div>
 
       {/* Permission Reference */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300 mb-4 flex items-center gap-2">
-          <span className="material-symbols-outlined">info</span>
-          Role Permissions Reference
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div>
-            <h4 className="font-bold text-purple-700 dark:text-purple-400 mb-2">SUPERADMIN</h4>
-            <ul className="space-y-1 text-slate-600 dark:text-slate-400">
-              <li>✓ Full system access</li>
-              <li>✓ Manage all tenants</li>
-              <li>✓ Manage all users</li>
-              <li>✓ All permissions</li>
-            </ul>
+      <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden mt-8 shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-surface-dark flex items-center gap-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg">
+            <span className="material-symbols-outlined">shield_person</span>
           </div>
-          <div>
-            <h4 className="font-bold text-blue-700 dark:text-blue-400 mb-2">TENANT_ADMIN</h4>
-            <ul className="space-y-1 text-slate-600 dark:text-slate-400">
-              <li>✓ Full tenant access</li>
-              <li>✓ Manage inventory</li>
-              <li>✓ Process refunds</li>
-              <li>✓ Manage users</li>
-              <li>✓ Export reports</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-green-700 dark:text-green-400 mb-2">STAFF</h4>
-            <ul className="space-y-1 text-slate-600 dark:text-slate-400">
-              <li>✓ View inventory</li>
-              <li>✓ Add products</li>
-              <li>✓ Create sales</li>
-              <li>✓ View reports</li>
-              <li>✗ No delete access</li>
-              <li>✗ No user management</li>
-            </ul>
-          </div>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-white">
+            Role Permissions Reference
+          </h3>
         </div>
-      </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-slate-200 dark:bg-slate-800">
+          
+          {/* Tenant Admin */}
+          <div className="bg-white dark:bg-surface-dark p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase">
+                Tenant Admin
+              </span>
+            </div>
+            <ul className="space-y-3 text-sm">
+              <li className="flex gap-3 text-slate-600 dark:text-slate-400 font-medium">
+                <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                Full organization access
+              </li>
+              <li className="flex gap-3 text-slate-600 dark:text-slate-400 font-medium">
+                <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                Manage all branches & settings
+              </li>
+              <li className="flex gap-3 text-slate-600 dark:text-slate-400 font-medium">
+                <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                Add and manage user accounts
+              </li>
+              <li className="flex gap-3 text-slate-600 dark:text-slate-400 font-medium">
+                <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                Export advanced financial reports
+              </li>
+            </ul>
+          </div>
+          
+          {/* Branch Admin */}
+          <div className="bg-white dark:bg-surface-dark p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase">
+                Branch Admin
+              </span>
+            </div>
+            <ul className="space-y-3 text-sm">
+              <li className="flex gap-3 text-slate-600 dark:text-slate-400 font-medium">
+                <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                Full access to assigned branch
+              </li>
+              <li className="flex gap-3 text-slate-600 dark:text-slate-400 font-medium">
+                <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                Manage branch inventory
+              </li>
+              <li className="flex gap-3 text-slate-600 dark:text-slate-400 font-medium">
+                <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                Process refunds & manage staff
+              </li>
+              <li className="flex gap-3 text-slate-400 dark:text-slate-600">
+                <span className="material-symbols-outlined text-slate-300 dark:text-slate-700 text-[18px]">cancel</span>
+                Cannot cross-view other branches
+              </li>
+            </ul>
+          </div>
 
-      {/* Info Box for User Creation */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300 mb-2 flex items-center gap-2">
-          <span className="material-symbols-outlined">info</span>
-          How to Create New Users
-        </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-          To create new users, use the SQL query in the Supabase Dashboard:
-        </p>
-        <ol className="text-sm text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside">
-          <li>Go to your Supabase Dashboard SQL Editor</li>
-          <li>Use the <code className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded">create-test-user.sql</code> file as a template</li>
-          <li>Modify the email, password, and role as needed</li>
-          <li>Run the query to create the user</li>
-        </ol>
+          {/* Core Staff */}
+          <div className="bg-white dark:bg-surface-dark p-6 md:col-span-2 lg:col-span-1">
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <span className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase">
+                Core Staff
+              </span>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">(Cashiers, Techs, Pharmacists)</span>
+            </div>
+            <ul className="space-y-3 text-sm">
+              <li className="flex gap-3 text-slate-600 dark:text-slate-400 font-medium">
+                <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                Standard POS operations
+              </li>
+              <li className="flex gap-3 text-slate-600 dark:text-slate-400 font-medium">
+                <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                View inventory (Pharmacists can add)
+              </li>
+              <li className="flex gap-3 text-slate-400 dark:text-slate-600">
+                <span className="material-symbols-outlined text-slate-300 dark:text-slate-700 text-[18px]">cancel</span>
+                Cannot delete records
+              </li>
+              <li className="flex gap-3 text-slate-400 dark:text-slate-600">
+                <span className="material-symbols-outlined text-slate-300 dark:text-slate-700 text-[18px]">cancel</span>
+                Cannot access management panels
+              </li>
+            </ul>
+          </div>
+          
+        </div>
       </div>
 
       {/* Add User Modal */}
       {showAddUserModal && (
-        <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
-          <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
+        <div className="modal-overlay bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-lg w-full">
             <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-xl font-bold dark:text-white">Add New User</h3>
-              <button
-                onClick={() => setShowAddUserModal(false)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
+              <button onClick={() => setShowAddUserModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-
-            {/* Modal Content */}
-            <div className="p-6 space-y-6">
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Follow these steps to manually create a new user in Supabase:
-              </p>
-
-              {/* Step 1 */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">
-                    1
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-slate-900 dark:text-white mb-2">
-                      Create User in Supabase Authentication
-                    </h4>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                      Go to your Supabase Dashboard → Authentication → Users → Add User
-                    </p>
-                    <a
-                      href="https://supabase.com/dashboard/project/_/auth/users"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-lg">open_in_new</span>
-                      Open Supabase Dashboard
-                    </a>
-                  </div>
-                </div>
+            
+            <form onSubmit={handleAddUserSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                <input required type="email" value={newUserForm.email} onChange={e => setNewUserForm({...newUserForm, email: e.target.value})} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-primary" placeholder="user@example.com" />
               </div>
-
-              {/* Step 2 */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">
-                    2
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-slate-900 dark:text-white mb-2">
-                      Copy the User ID
-                    </h4>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      After creating the user, copy their User ID (UUID) from the Authentication page.
-                    </p>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+                <input required type="password" value={newUserForm.password} onChange={e => setNewUserForm({...newUserForm, password: e.target.value})} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-primary" placeholder="Minimum 6 characters" minLength={6} />
               </div>
-
-              {/* Step 3 */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">
-                    3
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-slate-900 dark:text-white mb-2">
-                      Link User Profile with SQL
-                    </h4>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                      Go to SQL Editor and run this query (replace the values):
-                    </p>
-                    <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
-                      <pre className="text-xs text-slate-300 font-mono">
-{`INSERT INTO public.users (
-  id,
-  tenant_id,
-  branch_id,
-  role,
-  display_name
-) VALUES (
-  '<USER_ID_FROM_STEP_2>',
-  '${profile?.tenant_id || '<TENANT_ID>'}',
-  '<BRANCH_ID_OR_NULL>',
-  'staff',  -- or 'tenant_admin'
-  'User Display Name'
-);`}
-                      </pre>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                      Note: For tenant_admin role, set branch_id to NULL. For staff, provide a valid branch_id.
-                    </p>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Display Name</label>
+                <input required type="text" value={newUserForm.display_name} onChange={e => setNewUserForm({...newUserForm, display_name: e.target.value})} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-primary" placeholder="Full Name" />
               </div>
-
-              {/* Info Box */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">info</span>
-                  <div className="text-sm text-slate-600 dark:text-slate-400">
-                    <p className="font-medium text-blue-900 dark:text-blue-300 mb-1">Available Roles:</p>
-                    <ul className="space-y-1 ml-4 list-disc">
-                      <li><code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">staff</code> - Basic access to POS and inventory</li>
-                      <li><code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">tenant_admin</code> - Full access to tenant features</li>
-                      <li><code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">superadmin</code> - System-wide access (use with caution)</li>
-                    </ul>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Role</label>
+                <select required value={newUserForm.role} onChange={e => setNewUserForm({...newUserForm, role: e.target.value as UserRole})} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-primary">
+                  <option value={UserRole.CASHIER}>Cashier</option>
+                  <option value={UserRole.PHARMACY_TECHNICIAN}>Pharmacy Technician</option>
+                  <option value={UserRole.PHARMACIST}>Pharmacist</option>
+                  {profile?.role === UserRole.TENANT_ADMIN && <option value={UserRole.BRANCH_ADMIN}>Branch Admin</option>}
+                  {profile?.role === UserRole.TENANT_ADMIN && <option value={UserRole.TENANT_ADMIN}>Tenant Admin</option>}
+                </select>
               </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-800">
-              <button
-                onClick={() => setShowAddUserModal(false)}
-                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                Close
-              </button>
-            </div>
+              {newUserForm.role !== UserRole.TENANT_ADMIN && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Branch</label>
+                  <select required={newUserForm.role !== UserRole.TENANT_ADMIN && profile?.role === UserRole.TENANT_ADMIN} value={newUserForm.branch_id} onChange={e => setNewUserForm({...newUserForm, branch_id: e.target.value})} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-primary">
+                    <option value="">Select a branch</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button type="button" onClick={() => setShowAddUserModal(false)} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="px-4 py-2 text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50">
+                  {isSubmitting ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -594,7 +617,10 @@ const UserManagement: React.FC = () => {
                   onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as UserRole })}
                   className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
-                  <option value={UserRole.STAFF}>Staff</option>
+                  <option value={UserRole.CASHIER}>Cashier</option>
+                  <option value={UserRole.PHARMACY_TECHNICIAN}>Pharmacy Technician</option>
+                  <option value={UserRole.PHARMACIST}>Pharmacist</option>
+                  <option value={UserRole.BRANCH_ADMIN}>Branch Admin</option>
                   <option value={UserRole.TENANT_ADMIN}>Tenant Admin</option>
                   {profile?.role === UserRole.SUPERADMIN && (
                     <option value={UserRole.SUPERADMIN}>Superadmin</option>

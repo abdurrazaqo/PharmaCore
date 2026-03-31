@@ -7,7 +7,9 @@ import PatientBalanceModal from './PatientBalanceModal';
 import { getCustomers, addCustomer, updateCustomer, deleteCustomer } from '../services/database';
 import { supabase } from '../services/supabaseClient';
 import { useToast } from './ToastContainer';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, Permission } from '../contexts/AuthContext';
+import { useTenantGuard } from '../hooks/useTenantGuard';
+import ReadOnlyBadge from './ReadOnlyBadge';
 
 const Customers: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -23,7 +25,8 @@ const Customers: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [referenceBalances, setReferenceBalances] = useState<Record<string, number>>({});
   const { showToast } = useToast();
-  const { profile } = useAuth();
+  const { profile, hasPermission } = useAuth();
+  const tenantGuard = useTenantGuard();
 
   const itemsPerPage = 15;
 
@@ -103,9 +106,10 @@ const Customers: React.FC = () => {
   }, []);
 
   const loadCustomers = async () => {
+    if (!profile?.tenant?.id) return;
     try {
       setLoading(true);
-      const data = await getCustomers();
+      const data = await getCustomers(profile.tenant.id);
       setCustomers(data);
       setFilteredCustomers(data);
     } catch (error) {
@@ -119,8 +123,12 @@ const Customers: React.FC = () => {
   };
 
   const handleAddCustomer = async (newCustomer: any) => {
+    if (!hasPermission(Permission.CUSTOMER_ADD) || tenantGuard.isReadOnly) {
+      showToast('You do not have permission to add patients.', 'error');
+      return;
+    }
     try {
-      const added = await addCustomer(newCustomer);
+      const added = await addCustomer(newCustomer, profile!.tenant!.id);
       setCustomers([...customers, added]);
       showToast('Patient added successfully!', 'success');
     } catch (error) {
@@ -130,8 +138,12 @@ const Customers: React.FC = () => {
   };
 
   const handleUpdateCustomer = async (id: string, updates: any) => {
+    if (!hasPermission(Permission.CUSTOMER_EDIT) || tenantGuard.isReadOnly) {
+      showToast('You do not have permission to edit patients.', 'error');
+      return;
+    }
     try {
-      const updated = await updateCustomer(id, updates);
+      const updated = await updateCustomer(id, updates, profile!.tenant!.id);
       setCustomers(customers.map(c => c.id === id ? updated : c));
       showToast('Patient updated successfully!', 'success');
     } catch (error) {
@@ -151,12 +163,16 @@ const Customers: React.FC = () => {
   };
 
   const handleDeleteCustomer = async (customer: any) => {
+    if (!hasPermission(Permission.CUSTOMER_DELETE) || tenantGuard.isReadOnly) {
+      showToast('You do not have permission to delete patients.', 'error');
+      return;
+    }
     if (!confirm(`Are you sure you want to delete ${customer.name}? This action cannot be undone.`)) {
       return;
     }
 
     try {
-      await deleteCustomer(customer.id);
+      await deleteCustomer(customer.id, profile!.tenant!.id);
       setCustomers(customers.filter(c => c.id !== customer.id));
       showToast('Patient deleted successfully!', 'success');
     } catch (error) {
@@ -166,6 +182,10 @@ const Customers: React.FC = () => {
   };
 
   const handleUpdateBalance = (customer: any) => {
+    if (!hasPermission(Permission.CUSTOMER_EDIT) || tenantGuard.isReadOnly) {
+      showToast('Account in read-only mode or missing permissions.', 'error');
+      return;
+    }
     setSelectedCustomer(customer);
     setBalanceModalTab('update');
     setIsBalanceModalOpen(true);
@@ -180,7 +200,7 @@ const Customers: React.FC = () => {
       const changeAmount = newBalance - previousBalance;
 
       // Update customer balance
-      const updated = await updateCustomer(id, { balance: newBalance });
+      const updated = await updateCustomer(id, { balance: newBalance }, profile!.tenant!.id);
       setCustomers(customers.map(c => c.id === id ? updated : c));
 
       // Record balance change in history
@@ -216,17 +236,22 @@ const Customers: React.FC = () => {
   return (
     <div className="p-4 max-w-[1400px] mx-auto space-y-4 animate-in slide-in-from-right-4 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold dark:text-white">Patient Directory</h2>
-          <p className="text-sm text-slate-500">Manage prescription history and customer profiles</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h2 className="text-2xl font-bold dark:text-white">Patient Directory</h2>
+            <p className="text-sm text-slate-500">Manage prescription history and customer profiles</p>
+          </div>
+          {tenantGuard.isReadOnly && <ReadOnlyBadge />}
         </div>
-        <button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center justify-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
-        >
-          <span className="material-symbols-outlined">person_add</span>
-          Add New Patient
-        </button>
+        {hasPermission(Permission.CUSTOMER_ADD) && !tenantGuard.isReadOnly && (
+          <button 
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center justify-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+          >
+            <span className="material-symbols-outlined">person_add</span>
+            Add New Patient
+          </button>
+        )}
       </div>
 
       {/* Search Bar */}
@@ -251,7 +276,7 @@ const Customers: React.FC = () => {
               <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
                 <th className="px-3 py-2">ID</th>
                 <th className="px-3 py-2">Patient Name</th>
-                <th className="px-3 py-2">Contact</th>
+                <th className="px-3 py-2 hidden md:table-cell">Contact</th>
                 <th className="px-2 py-2 text-center hidden lg:table-cell">Visits</th>
                 <th className="px-2 py-2 hidden lg:table-cell">Insurance</th>
                 <th className="px-2 py-2">Balance</th>
@@ -285,7 +310,7 @@ const Customers: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-400">{customer.phone}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-400 hidden md:table-cell">{customer.phone}</td>
                   <td className="px-2 py-2 text-center hidden lg:table-cell">
                     <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">{customer.visits}</span>
                   </td>
@@ -313,20 +338,24 @@ const Customers: React.FC = () => {
                       >
                         <span className="material-symbols-outlined text-base">history</span>
                       </button>
-                      <button 
-                        onClick={() => handleEditCustomer(customer)}
-                        className="p-1 text-slate-400 hover:text-primary transition-colors"
-                        title="Edit Patient"
-                      >
-                        <span className="material-symbols-outlined text-base">edit</span>
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteCustomer(customer)}
-                        className="p-1 text-slate-400 hover:text-red-500 transition-colors"
-                        title="Delete Patient"
-                      >
-                        <span className="material-symbols-outlined text-base">delete</span>
-                      </button>
+                      {hasPermission(Permission.CUSTOMER_EDIT) && !tenantGuard.isReadOnly && (
+                        <button 
+                          onClick={() => handleEditCustomer(customer)}
+                          className="p-1 text-slate-400 hover:text-primary transition-colors"
+                          title="Edit Patient"
+                        >
+                          <span className="material-symbols-outlined text-base">edit</span>
+                        </button>
+                      )}
+                      {hasPermission(Permission.CUSTOMER_DELETE) && !tenantGuard.isReadOnly && (
+                        <button 
+                          onClick={() => handleDeleteCustomer(customer)}
+                          className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                          title="Delete Patient"
+                        >
+                          <span className="material-symbols-outlined text-base">delete</span>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

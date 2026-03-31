@@ -16,6 +16,8 @@ import { useToast } from './ToastContainer';
 import { getCategoryColor } from '../utils/categoryColors';
 import BarcodeScanner from './BarcodeScanner';
 import { useAuth } from '../contexts/AuthContext';
+import { useTenantGuard } from '../hooks/useTenantGuard';
+import ReadOnlyBadge from './ReadOnlyBadge';
 
 const POS: React.FC = () => {
   const [cart, setCart] = useState<{ id: string, qty: number | string }[]>([]);
@@ -23,6 +25,7 @@ const POS: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState({ name: 'Walk-in Customer', initials: 'WC', phone: 'N/A' });
   const [products, setProducts] = useState<Product[]>([]);
   const { profile } = useAuth();
+  const tenantGuard = useTenantGuard();
   const [loading, setLoading] = useState(true);
   const [completedTransactionId, setCompletedTransactionId] = useState<string | null>(null);
   const [completedTransactionTotal, setCompletedTransactionTotal] = useState<number>(0);
@@ -111,9 +114,10 @@ const POS: React.FC = () => {
   }, []);
 
   const loadProducts = async () => {
+    if (!profile?.tenant?.id) return;
     try {
       setLoading(true);
-      const data = await getProducts();
+      const data = await getProducts(profile.tenant.id, profile.branch?.id);
       setProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -195,6 +199,11 @@ const POS: React.FC = () => {
   };
 
   const handleCompleteSale = async () => {
+    if (tenantGuard.isReadOnly) {
+      showToast('Account is in read-only mode. Renew subscription to process sales.', 'error');
+      return;
+    }
+    
     if (cart.length === 0) {
       showToast('Cart is empty! Add items to complete sale.', 'warning');
       return;
@@ -218,7 +227,7 @@ const POS: React.FC = () => {
 
     try {
       // Get next sequential invoice ID
-      const invoiceId = await getNextInvoiceId();
+      const invoiceId = await getNextInvoiceId(profile!.tenant!.id, profile!.branch?.id);
 
       // Calculate total before clearing cart
       const saleTotal = total;
@@ -233,7 +242,7 @@ const POS: React.FC = () => {
         status: 'Completed' as any,
         paymentMethod: paymentMethod,
         staffName: profile?.display_name || 'Staff'
-      } as any);
+      } as any, profile!.tenant!.id, profile!.branch?.id);
 
       // Save sales items
       const salesItems = cart.map(item => {
@@ -246,7 +255,7 @@ const POS: React.FC = () => {
         };
       });
 
-      await addSalesItems(invoiceId, salesItems);
+      await addSalesItems(invoiceId, salesItems, profile!.tenant!.id);
 
       // Update customer visit count (if not walk-in customer)
       if (selectedCustomer.name !== 'Walk-in Customer') {

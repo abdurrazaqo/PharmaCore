@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getCustomers } from '../services/database';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SelectCustomerModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ const SelectCustomerModal: React.FC<SelectCustomerModalProps> = ({ isOpen, onClo
   const [loading, setLoading] = useState(true);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState('');
+  const { profile } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
@@ -24,9 +26,10 @@ const SelectCustomerModal: React.FC<SelectCustomerModalProps> = ({ isOpen, onClo
   }, [isOpen]);
 
   const loadCustomers = async () => {
+    if (!profile?.tenant?.id) return;
     try {
       setLoading(true);
-      const data = await getCustomers();
+      const data = await getCustomers(profile.tenant.id);
       setCustomers(data);
     } catch (error) {
       console.error('Error loading customers:', error);

@@ -47,7 +47,7 @@ export enum Permission {
 
 // Define permissions for each role
 const rolePermissions: Record<UserRole, Permission[]> = {
-  [UserRole.STAFF]: [
+  [UserRole.CASHIER]: [
     Permission.VIEW_INVENTORY,
     Permission.VIEW_POS,
     Permission.PROCESS_SALES,
@@ -55,12 +55,54 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.CREATE_CUSTOMERS,
     Permission.VIEW_CUSTOMER_HISTORY,
   ],
-  
+  [UserRole.PHARMACY_TECHNICIAN]: [
+    Permission.VIEW_INVENTORY,
+    Permission.VIEW_POS,
+    Permission.PROCESS_SALES,
+    Permission.VIEW_CUSTOMERS,
+    Permission.CREATE_CUSTOMERS,
+    Permission.VIEW_CUSTOMER_HISTORY,
+  ],
+  [UserRole.PHARMACIST]: [
+    Permission.VIEW_INVENTORY,
+    Permission.VIEW_POS,
+    Permission.PROCESS_SALES,
+    Permission.VIEW_CUSTOMERS,
+    Permission.CREATE_CUSTOMERS,
+    Permission.VIEW_CUSTOMER_HISTORY,
+    Permission.CREATE_PRODUCTS,
+    Permission.EDIT_PRODUCTS,
+  ],
+  [UserRole.BRANCH_ADMIN]: [
+    Permission.VIEW_INVENTORY,
+    Permission.VIEW_POS,
+    Permission.PROCESS_SALES,
+    Permission.VIEW_CUSTOMERS,
+    Permission.CREATE_CUSTOMERS,
+    Permission.VIEW_CUSTOMER_HISTORY,
+    Permission.VIEW_USERS,
+    Permission.CREATE_USERS,
+    Permission.EDIT_USERS,
+    Permission.DELETE_USERS,
+    Permission.CREATE_PRODUCTS,
+    Permission.EDIT_PRODUCTS,
+    Permission.DELETE_PRODUCTS,
+    Permission.ADJUST_STOCK,
+    Permission.PROCESS_RETURNS,
+    Permission.APPLY_DISCOUNTS,
+    Permission.EDIT_CUSTOMERS,
+    Permission.DELETE_CUSTOMERS,
+    Permission.VIEW_REPORTS,
+    Permission.EXPORT_REPORTS,
+    Permission.VIEW_FINANCIAL_REPORTS,
+  ],
   [UserRole.TENANT_ADMIN]: [
-    // All staff permissions
-    ...rolePermissions[UserRole.STAFF],
-    
-    // Additional admin permissions
+    Permission.VIEW_INVENTORY,
+    Permission.VIEW_POS,
+    Permission.PROCESS_SALES,
+    Permission.VIEW_CUSTOMERS,
+    Permission.CREATE_CUSTOMERS,
+    Permission.VIEW_CUSTOMER_HISTORY,
     Permission.VIEW_USERS,
     Permission.CREATE_USERS,
     Permission.EDIT_USERS,
@@ -80,19 +122,22 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.EDIT_SETTINGS,
     Permission.MANAGE_BRANCHES,
   ],
-  
   [UserRole.SUPERADMIN]: [
-    // All permissions
     ...Object.values(Permission),
   ],
 };
 
 export const usePermissions = () => {
-  const { profile } = useAuth();
+  const { profile, hasRole } = useAuth();
 
+  const isSuperadmin = hasRole(UserRole.SUPERADMIN);
+  const isTenantAdmin = hasRole(UserRole.TENANT_ADMIN);
+  const isBranchAdmin = hasRole(UserRole.BRANCH_ADMIN);
+  const isPharmacist = hasRole(UserRole.PHARMACIST);
+
+  // Legacy Permission checks
   const hasPermission = (permission: Permission): boolean => {
     if (!profile) return false;
-    
     const userPermissions = rolePermissions[profile.role] || [];
     return userPermissions.includes(permission);
   };
@@ -105,7 +150,22 @@ export const usePermissions = () => {
     return permissions.every(permission => hasPermission(permission));
   };
 
+  // New RBAC Flags
   return {
+    canViewAllBranches: isSuperadmin || isTenantAdmin,
+    canManageInventory: isSuperadmin || isTenantAdmin || isBranchAdmin || isPharmacist,
+    canViewInventory: !!profile,
+    canProcessSales: !!profile && !isSuperadmin,
+    canManageCustomers: isSuperadmin || isTenantAdmin || isBranchAdmin || isPharmacist,
+    canViewReports: isSuperadmin || isTenantAdmin || isBranchAdmin || isPharmacist,
+    canAccessAIConsult: isSuperadmin || isTenantAdmin || isBranchAdmin || isPharmacist,
+    canManageUsers: isSuperadmin || isTenantAdmin || isBranchAdmin,
+    canCreateBranchAdmin: isSuperadmin || isTenantAdmin,
+    canManageSubscription: isSuperadmin || isTenantAdmin,
+    canAccessSuperadminDashboard: isSuperadmin,
+    canViewAuditLogs: isSuperadmin || isTenantAdmin || isBranchAdmin,
+
+    // Legacy exports
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,

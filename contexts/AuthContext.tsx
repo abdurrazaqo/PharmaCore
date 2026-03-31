@@ -7,14 +7,22 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   isLoading: boolean;
+  error: string | null;
+  isAuthenticated: boolean;
   logout: () => Promise<void>;
+  signOut: () => Promise<void>;
   requireRole: (role: UserRole) => boolean;
+  hasRole: (...roles: UserRole[]) => boolean;
+  isSuperAdmin: () => boolean;
+  isTenantAdmin: () => boolean;
+  isBranchAdmin: () => boolean;
   hasPermission: (permission: Permission) => boolean;
   canEdit: () => boolean;
   canDelete: () => boolean;
   canManageUsers: () => boolean;
-  canViewReports: () => boolean;
+  canVerifyOffline: () => boolean;
   canExport: () => boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 export enum Permission {
@@ -56,14 +64,23 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   isLoading: true,
+  error: null,
+  isAuthenticated: false,
   logout: async () => {},
+  signOut: async () => {},
   requireRole: () => false,
+  hasRole: () => false,
+  isSuperAdmin: () => false,
+  isTenantAdmin: () => false,
+  isBranchAdmin: () => false,
   hasPermission: () => false,
   canEdit: () => false,
   canDelete: () => false,
   canManageUsers: () => false,
   canViewReports: () => false,
   canExport: () => false,
+  canVerifyOffline: () => false,
+  refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -72,13 +89,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const isAuthenticated = !!user;
 
   useEffect(() => {
     // Get initial session
     supabase?.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        refreshProfile(session.user.id);
       } else {
         setIsLoading(false);
       }
@@ -88,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        refreshProfile(session.user.id);
       } else {
         setProfile(null);
         setIsLoading(false);
@@ -100,11 +119,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const refreshProfile = async (userId: string = user?.id || '') => {
+    if (!userId) return;
     try {
+      setError(null);
+      setIsLoading(true);
       if (!supabase) throw new Error('Supabase client not initialized');
       
-      console.log('🔍 Fetching profile for user:', userId);
+      // console.log('🔍 Fetching profile for user:', userId);
       
       // Update last_sign_in_at timestamp
       await supabase
@@ -119,24 +141,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .single();
 
-      console.log('📦 User data:', userData);
-      console.log('❌ User error:', userError);
+      // console.log('📦 User data:', userData);
+      // console.log('❌ User error:', userError);
 
       if (userError) {
         console.error('Error fetching user profile:', userError);
+        setError(`Database error: ${userError.message}`);
         return;
       }
 
       if (!userData) {
         console.error('No user data found');
+        setError('No profile found for this account. Contact your administrator.');
         return;
       }
 
       // Check if user is suspended (only if column exists)
       if (userData.is_suspended === true) {
         console.error('User account is suspended');
+        setError('Your account has been suspended. Please contact an administrator.');
         await supabase.auth.signOut();
-        alert('Your account has been suspended. Please contact an administrator.');
         return;
       }
 
@@ -145,11 +169,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (userData.tenant_id) {
         const { data: tenant } = await supabase
           .from('tenants')
-          .select('id, name, subdomain')
+          .select('id, name, subdomain, status, plan, billing_cycle, subscription_expires_at, trial_ends_at, onboarding_completed, logo_url, is_demo, is_gifted, gifted_until')
           .eq('id', userData.tenant_id)
           .single();
         tenantData = tenant;
-        console.log('🏢 Tenant data:', tenantData);
+        // console.log('🏢 Tenant data:', tenantData);
       }
 
       // Fetch branch data separately if branch_id exists
@@ -161,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .eq('id', userData.branch_id)
           .single();
         branchData = branch;
-        console.log('🏪 Branch data:', branchData);
+        // console.log('🏪 Branch data:', branchData);
       }
 
       // Transform the data to match UserProfile interface
@@ -171,11 +195,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: userData.role,
         branch_id: userData.branch_id,
         display_name: userData.display_name,
+        is_suspended: userData.is_suspended,
         tenant: tenantData,
         branch: branchData,
       };
       
-      console.log('✅ Transformed profile:', profile);
+      // console.log('✅ Transformed profile:', profile);
       setProfile(profile);
     } catch (err) {
       console.error('Failed to fetch profile:', err);
@@ -192,14 +217,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signOut = logout;
+
+  const hasRole = (...roles: UserRole[]): boolean => {
+    if (!profile) return false;
+    return roles.includes(profile.role);
+  };
+
+  const isSuperAdmin = (): boolean => profile?.role === UserRole.SUPERADMIN;
+  const isTenantAdmin = (): boolean => profile?.role === UserRole.TENANT_ADMIN;
+  const isBranchAdmin = (): boolean => profile?.role === UserRole.BRANCH_ADMIN;
+
   const requireRole = (role: UserRole): boolean => {
     if (!profile) return false;
     
     // Superadmin can access everything
     if (profile.role === UserRole.SUPERADMIN) return true;
     
-    // Tenant admin can access staff stuff but not superadmin
-    if (profile.role === UserRole.TENANT_ADMIN && role === UserRole.STAFF) return true;
+    // Legacy support for STAFF role checking mappings
+    if (role === 'staff' as any) {
+        return profile.role === UserRole.TENANT_ADMIN || 
+               profile.role === UserRole.BRANCH_ADMIN || 
+               profile.role === UserRole.PHARMACIST || 
+               profile.role === UserRole.PHARMACY_TECHNICIAN || 
+               profile.role === UserRole.CASHIER;
+    }
     
     return profile.role === role;
   };
@@ -251,24 +293,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         Permission.SETTINGS_EDIT,
       ],
       
-      [UserRole.STAFF]: [
-        // Inventory - view only
-        Permission.INVENTORY_VIEW,
-        
-        // Sales - create and refund
-        Permission.SALES_CREATE,
-        Permission.SALES_VIEW_HISTORY,
-        Permission.SALES_REFUND,
-        
-        // Customers - view and add only
-        Permission.CUSTOMER_VIEW,
-        Permission.CUSTOMER_ADD,
-        
-        // Reports - view only
+      [UserRole.BRANCH_ADMIN]: [
+        Permission.INVENTORY_VIEW, Permission.INVENTORY_ADD, Permission.INVENTORY_EDIT, Permission.INVENTORY_DELETE, Permission.INVENTORY_EXPORT,
+        Permission.SALES_CREATE, Permission.SALES_VIEW_HISTORY, Permission.SALES_REFUND,
+        Permission.CUSTOMER_VIEW, Permission.CUSTOMER_ADD, Permission.CUSTOMER_EDIT, Permission.CUSTOMER_DELETE,
+        Permission.REPORTS_VIEW, Permission.REPORTS_EXPORT,
+        Permission.USERS_VIEW, Permission.USERS_ADD, Permission.USERS_EDIT, Permission.USERS_DELETE,
+      ],
+      
+      [UserRole.PHARMACIST]: [
+        Permission.INVENTORY_VIEW, Permission.INVENTORY_ADD, Permission.INVENTORY_EDIT, Permission.INVENTORY_DELETE,
+        Permission.SALES_CREATE, Permission.SALES_VIEW_HISTORY, Permission.SALES_REFUND,
+        Permission.CUSTOMER_VIEW, Permission.CUSTOMER_ADD, Permission.CUSTOMER_EDIT, Permission.CUSTOMER_DELETE,
         Permission.REPORTS_VIEW,
-        
-        // No user management
-        // No settings access
+      ],
+      
+      [UserRole.PHARMACY_TECHNICIAN]: [
+        Permission.INVENTORY_VIEW,
+        Permission.SALES_CREATE, Permission.SALES_VIEW_HISTORY,
+        Permission.CUSTOMER_VIEW, Permission.CUSTOMER_ADD,
+      ],
+      
+      [UserRole.CASHIER]: [
+        Permission.INVENTORY_VIEW,
+        Permission.SALES_CREATE, Permission.SALES_VIEW_HISTORY,
+        Permission.CUSTOMER_VIEW, Permission.CUSTOMER_ADD,
       ],
     };
     
@@ -300,15 +349,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider value={{ 
       user, 
       profile, 
-      isLoading, 
-      logout, 
+      isLoading,
+      error,
+      isAuthenticated,
+      logout,
+      signOut,
       requireRole,
+      hasRole,
+      isSuperAdmin,
+      isTenantAdmin,
+      isBranchAdmin,
       hasPermission,
       canEdit,
       canDelete,
       canManageUsers,
       canViewReports,
       canExport,
+      refreshProfile,
     }}>
       {children}
     </AuthContext.Provider>

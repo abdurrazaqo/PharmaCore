@@ -18,17 +18,18 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      if (!supabase) throw new Error('Supabase client not initialized. Check your environment variables.');
+      if (!supabase) throw new Error('Supabase configuration is missing. This platform is currently in maintenance.');
       
-      // Supabase still expects the credential to be passed as 'email' internally 
-      // when using the standard signInWithPassword, but we can treat it as a unique username 
-      // by appending a fixed domain if necessary, or depending on how you configure Auth.
-      // If you are natively supporting usernames in Supabase config, you might need a custom RPC
-      // or to store email = username@yourdomain.com. For this example, we'll append a generic domain
-      // so it works cleanly with standard Supabase Auth if users are registered that way.
-      // Example: "admin" -> "admin@pharmacore.local"
-      
-      const formattedEmail = username.includes('@') ? username : `${username}@pharmacore.local`;
+      // Standardize username/email
+      let formattedEmail = username.trim();
+      if (!formattedEmail.includes('@')) {
+        // Superadmin uses the system domain, everyone else uses the local domain
+        if (formattedEmail.toLowerCase() === 'superadmin') {
+          formattedEmail = 'superadmin@365health.online';
+        } else {
+          formattedEmail = `${formattedEmail}@pharmacore.local`;
+        }
+      }
 
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: formattedEmail,
@@ -41,7 +42,8 @@ const Login: React.FC = () => {
         navigate('/');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
+      console.error('Login error:', err);
+      setError(err.message || 'Verification failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -58,8 +60,8 @@ const Login: React.FC = () => {
         </h2>
         <p className="mt-2 text-center text-xs sm:text-sm text-slate-600 dark:text-slate-400">
           Or{' '}
-          <a href="mailto:hello@365health.online" className="font-medium text-primary hover:text-primary/80">
-            contact support for an account
+          <a href="https://www.365health.online/products/pharmacore" target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:text-primary/80">
+            sign up or try live demo here
           </a>
         </p>
       </div>

@@ -8,9 +8,24 @@ import Docs from './components/Docs';
 import Customers from './components/Customers';
 import Reports from './components/Reports';
 import UserManagement from './components/UserManagement';
+import SubscriptionPage from './components/SubscriptionPage';
 import Login from './components/Login';
+import DemoPage from './pages/DemoPage';
+import OnboardPage from './pages/OnboardPage';
+import OnboardPendingPage from './pages/OnboardPendingPage';
+import SetupPage from './pages/SetupPage';
+import SuperadminLayout from './components/superadmin/SuperadminLayout';
+import SuperadminOverview from './components/superadmin/SuperadminOverview';
+import SuperadminPending from './components/superadmin/SuperadminPending';
+import SuperadminPharmacies from './components/superadmin/SuperadminPharmacies';
+import SuperadminBetaTenants from './components/superadmin/SuperadminBetaTenants';
+import SuperadminAccessCodes from './components/superadmin/SuperadminAccessCodes';
+import SuperadminAuditLogs from './components/superadmin/SuperadminAuditLogs';
+import SuperadminRejected from './components/superadmin/SuperadminRejected';
 import ProtectedRoute from './components/ProtectedRoute';
-import { AuthProvider } from './contexts/AuthContext';
+import Unauthorized from './components/Unauthorized';
+import Suspended from './components/Suspended';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Page, UserRole } from './types';
 import { getMedicalAssistanceStream } from './services/geminiService';
 import { ToastProvider } from './components/ToastContainer';
@@ -21,6 +36,31 @@ const DashboardWrapper = () => {
   return <Dashboard onNavigate={(page: Page) => navigate('/' + page)} />;
 };
 
+// HomeRedirect dynamically routes users based on their role
+const HomeRedirect = () => {
+  const { profile, isLoading, user } = useAuth();
+  
+  // console.log('🏠 HomeRedirect - profile:', profile?.role, 'isLoading:', isLoading, 'user:', user?.email);
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#F0F4F4] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#006C75] border-t-transparent"></div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (profile?.role === UserRole.SUPERADMIN) {
+    return <Navigate to="/superadmin" replace />;
+  }
+  
+  return <Navigate to={`/${Page.DASHBOARD}`} replace />;
+};
+
 const App: React.FC = () => {
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -29,8 +69,8 @@ const App: React.FC = () => {
 
   // Debug: Log when component mounts
   useEffect(() => {
-    console.log('PharmaCore App mounted successfully!');
-    console.log('React is working!');
+    // console.log('PharmaCore App mounted successfully!');
+    // console.log('React is working!');
   }, []);
 
   const handleAskAi = async () => {
@@ -56,7 +96,15 @@ const App: React.FC = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/demo" element={<DemoPage />} />
+            <Route path="/onboard" element={<OnboardPage />} />
+            <Route path="/onboard/pending" element={<OnboardPendingPage />} />
+            <Route path="/setup" element={<SetupPage />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="/suspended" element={<Suspended />} />
             
+            <Route path="/" element={<HomeRedirect />} />
+
             <Route element={
               <ProtectedRoute>
                 <Layout 
@@ -127,26 +175,48 @@ const App: React.FC = () => {
                 />
               </ProtectedRoute>
             }>
-              <Route path="/" element={<Navigate to={`/${Page.DASHBOARD}`} replace />} />
               <Route path={`/${Page.DASHBOARD}`} element={<DashboardWrapper />} />
               <Route path={`/${Page.INVENTORY}`} element={<Inventory />} />
               <Route path={`/${Page.POS}`} element={<POS />} />
               <Route path={`/${Page.CUSTOMERS}`} element={<Customers />} />
               <Route path={`/${Page.REPORTS}`} element={<Reports />} />
               <Route path={`/${Page.DOCS}`} element={<Docs />} />
-              <Route path="/users" element={<UserManagement />} />
-              
               <Route 
-                path="/superadmin" 
+                path="/users" 
                 element={
-                  <ProtectedRoute requiredRole={UserRole.SUPERADMIN}>
-                    <div className="p-8">
-                      <h1 className="text-2xl font-bold">Superadmin Area</h1>
-                      <p>Only superadmins can access this page.</p>
-                    </div>
+                  <ProtectedRoute requiredRoles={[UserRole.SUPERADMIN, UserRole.TENANT_ADMIN, UserRole.BRANCH_ADMIN]}>
+                    <UserManagement />
                   </ProtectedRoute>
                 } 
               />
+              
+              <Route 
+                path="/subscription" 
+                element={
+                  <ProtectedRoute requiredRoles={[UserRole.SUPERADMIN, UserRole.TENANT_ADMIN]}>
+                    <SubscriptionPage />
+                  </ProtectedRoute>
+                } 
+              />
+            </Route>
+
+            {/* Superadmin Area (Independent Layout) */}
+            <Route 
+              path="/superadmin" 
+              element={
+                <ProtectedRoute requiredRole={UserRole.SUPERADMIN}>
+                  <SuperadminLayout />
+                </ProtectedRoute>
+              } 
+            >
+              <Route index element={<SuperadminOverview />} />
+              <Route path="pending" element={<SuperadminPending />} />
+              <Route path="pharmacies" element={<SuperadminPharmacies />} />
+              <Route path="pharmacies/:filter" element={<SuperadminPharmacies />} />
+              <Route path="beta-tenants" element={<SuperadminBetaTenants />} />
+              <Route path="access-codes" element={<SuperadminAccessCodes />} />
+              <Route path="audit-logs" element={<SuperadminAuditLogs />} />
+              <Route path="rejected" element={<SuperadminRejected />} />
             </Route>
           </Routes>
         </BrowserRouter>

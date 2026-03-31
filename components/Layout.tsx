@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useAuth, Permission } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
+import { useTenantGuard } from '../hooks/useTenantGuard';
 import { Page } from '../types';
 import Logo from './Logo';
 import ChangePasswordModal from './ChangePasswordModal';
+import { DemoBanner } from './DemoBanner';
 
 interface LayoutProps {
   isAiOpen?: boolean;
@@ -14,15 +17,23 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, profile, hasPermission } = useAuth();
+  const { logout, profile } = useAuth();
+  const permissions = usePermissions();
+  const tenantGuard = useTenantGuard();
+
+  const [dismissedBanners, setDismissedBanners] = useState(() => ({
+    trial: sessionStorage.getItem('dismissedTrialBanner') === 'true',
+    renewal: sessionStorage.getItem('dismissedRenewalBanner') === 'true'
+  }));
+
+  const dismissBanner = (type: 'trial' | 'renewal') => {
+    sessionStorage.setItem(`dismissed${type.charAt(0).toUpperCase() + type.slice(1)}Banner`, 'true');
+    setDismissedBanners(prev => ({ ...prev, [type]: true }));
+  };
   
   // Debug logging
   useEffect(() => {
-    console.log('🎨 Layout - Profile data:', profile);
-    console.log('🎨 Layout - Display name:', profile?.display_name);
-    console.log('🎨 Layout - Branch:', profile?.branch);
-    console.log('🎨 Layout - Tenant:', profile?.tenant);
-    console.log('🎨 Layout - Role:', profile?.role);
+    // Layout rendering
   }, [profile]);
   
   const [isDark, setIsDark] = useState(() => {
@@ -122,18 +133,20 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
 
   const navItems = [
     { id: Page.DASHBOARD, label: 'Dashboard', icon: 'dashboard', shortLabel: 'Home' },
-    { id: Page.POS, label: 'Sales / POS', icon: 'point_of_sale', shortLabel: 'POS' },
-    { id: Page.INVENTORY, label: 'Inventory', icon: 'inventory_2', shortLabel: 'Stock' },
-    { id: Page.CUSTOMERS, label: 'Patients', icon: 'group', shortLabel: 'Patients' },
-    { id: Page.REPORTS, label: 'Reports', icon: 'bar_chart', shortLabel: 'Reports' },
-    ...(hasPermission(Permission.USERS_VIEW) ? [
-      { id: 'users', label: 'User Management', icon: 'manage_accounts', shortLabel: 'Users' }
-    ] : []),
+    ...((permissions.canManageInventory || permissions.canViewInventory) ? [{ id: Page.INVENTORY, label: 'Inventory', icon: 'inventory_2', shortLabel: 'Stock' }] : []),
+    ...(permissions.canProcessSales ? [{ id: Page.POS, label: 'Sales / POS', icon: 'point_of_sale', shortLabel: 'POS' }] : []),
+    ...(permissions.canManageCustomers ? [{ id: Page.CUSTOMERS, label: 'Patients', icon: 'group', shortLabel: 'Patients' }] : []),
+    ...(permissions.canViewReports ? [{ id: Page.REPORTS, label: 'Reports', icon: 'bar_chart', shortLabel: 'Reports' }] : []),
+    ...(permissions.canManageUsers ? [{ id: 'users', label: 'User Management', icon: 'manage_accounts', shortLabel: 'Users' }] : []),
+    ...(permissions.canManageSubscription ? [{ id: 'subscription', label: 'Subscription', icon: 'card_membership', shortLabel: 'Plan' }] : []),
+    ...(permissions.canAccessSuperadminDashboard ? [{ id: 'superadmin', label: 'Superadmin Console', icon: 'admin_panel_settings', shortLabel: 'Admin' }] : []),
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
-      {/* Desktop Sidebar - Hidden on Mobile */}
+    <div className="flex flex-col h-screen overflow-hidden">
+      {tenantGuard.isDemo && <DemoBanner />}
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
+        {/* Desktop Sidebar - Hidden on Mobile */}
       <aside className="hidden lg:flex w-56 bg-white dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex-col shrink-0">
         <div className="p-5">
           <Logo size="md" />
@@ -195,12 +208,17 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
 
             {/* Terminal Info - Desktop */}
             <div className="hidden lg:flex items-center gap-3">
-              <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                <span className="material-symbols-outlined">store</span>
+              <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center overflow-hidden shrink-0">
+                {profile?.tenant?.logo_url ? (
+                  <img src={profile.tenant.logo_url} alt="Pharmacy Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-lg font-bold">{profile?.tenant?.name?.[0]?.toUpperCase() || 'P'}</span>
+                )}
               </div>
               <div className="text-left">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {profile?.tenant?.name || 'Main Pharmacy'}
+                <p className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  {tenantGuard.isDemo ? '365Demo Pharmacy 🔬' : (profile?.tenant?.name || 'Main Pharmacy')}
+                  {tenantGuard.isDemo && <span className="text-[9px] bg-orange-500/20 text-orange-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest">Demo</span>}
                 </p>
                 <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
                   {profile?.branch?.name || 'Terminal #01'}
@@ -259,6 +277,37 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
           </div>
         </header>
 
+        {/* Banners */}
+        {tenantGuard.isReadOnly && (
+          <div className="bg-red-500 text-white px-4 py-2 flex items-center justify-center gap-2 text-sm font-medium z-10 relative">
+            <span className="material-symbols-outlined text-lg">warning</span>
+            <span>Your account is in read-only mode. Renew your subscription to restore full access.</span>
+            <button onClick={() => navigate('/subscription')} className="underline hover:text-white/80 font-bold ml-2">Renew now &rarr;</button>
+          </div>
+        )}
+        
+        {!tenantGuard.isDemo && !tenantGuard.isReadOnly && tenantGuard.isTrialing && !dismissedBanners.trial && (
+          <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between text-sm font-medium z-10 relative">
+            <div className="flex items-center gap-2 flex-1 justify-center">
+              <span className="material-symbols-outlined text-lg">rocket_launch</span>
+              <span>You are on a 30-day free trial. {tenantGuard.trialDaysRemaining} days remaining.</span>
+              <a href="https://www.365health.online/products/pharmacore#pricing" target="_blank" rel="noreferrer" className="underline hover:text-white/80 font-bold ml-2">Choose a plan &rarr;</a>
+            </div>
+            <button onClick={() => dismissBanner('trial')} className="p-1 hover:bg-white/20 rounded-lg"><span className="material-symbols-outlined text-sm">close</span></button>
+          </div>
+        )}
+
+        {!tenantGuard.isDemo && !tenantGuard.isReadOnly && !tenantGuard.isTrialing && tenantGuard.showRenewalBanner && !dismissedBanners.renewal && (
+          <div className="bg-orange-500 text-white px-4 py-2 flex items-center justify-between text-sm font-medium z-10 relative">
+            <div className="flex items-center gap-2 flex-1 justify-center">
+              <span className="material-symbols-outlined text-lg">schedule</span>
+              <span>Your subscription expires in {tenantGuard.subscriptionDaysRemaining} days.</span>
+              <button onClick={() => navigate('/subscription')} className="underline hover:text-white/80 font-bold ml-2">Renew now &rarr;</button>
+            </div>
+            <button onClick={() => dismissBanner('renewal')} className="p-1 hover:bg-white/20 rounded-lg"><span className="material-symbols-outlined text-sm">close</span></button>
+          </div>
+        )}
+
         {/* Content - with bottom padding on mobile for bottom nav */}
         <div ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden pb-16 lg:pb-0">
           <Outlet />
@@ -278,12 +327,17 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
             {/* Header */}
             <div className="p-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                  <span className="material-symbols-outlined">store</span>
+                <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center overflow-hidden shrink-0">
+                  {profile?.tenant?.logo_url ? (
+                    <img src={profile.tenant.logo_url} alt="Pharmacy Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-lg font-bold">{profile?.tenant?.name?.[0]?.toUpperCase() || 'P'}</span>
+                  )}
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    {profile?.tenant?.name || 'Main Pharmacy'}
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    {tenantGuard.isDemo ? '365Demo Pharmacy 🔬' : (profile?.tenant?.name || 'Main Pharmacy')}
+                    {tenantGuard.isDemo && <span className="text-[9px] bg-orange-500/20 text-orange-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest">Demo</span>}
                   </p>
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
                     {profile?.branch?.name || 'Terminal #01'}
@@ -414,6 +468,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
           );
         })}
       </nav>
+      </div>
     </div>
   );
 };

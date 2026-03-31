@@ -96,16 +96,36 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     }
   };
 
-  // Auto-calculate selling price based on cost & margin
-  useEffect(() => {
-    if (formData.costPrice && profitMargin > 0) {
-      const cost = parseFloat(formData.costPrice);
+  const handleCostPriceChange = (val: string) => {
+    const cost = parseFloat(val);
+    setFormData(prev => {
       if (!isNaN(cost) && cost > 0) {
-        const sellingPrice = cost / (1 - profitMargin / 100);
-        setFormData(prev => ({ ...prev, price: sellingPrice.toFixed(2) }));
+        const sellingPrice = cost * (1 + profitMargin / 100);
+        return { ...prev, costPrice: val, price: sellingPrice.toFixed(2) };
       }
+      return { ...prev, costPrice: val };
+    });
+  };
+
+  const handleProfitMarginChange = (val: number) => {
+    setProfitMargin(val);
+    const cost = parseFloat(formData.costPrice);
+    if (!isNaN(cost) && cost > 0) {
+      const sellingPrice = cost * (1 + val / 100);
+      setFormData(prev => ({ ...prev, price: sellingPrice.toFixed(2) }));
     }
-  }, [formData.costPrice, profitMargin]);
+  };
+
+  const handlePriceChange = (val: string) => {
+    const priceNum = parseFloat(val);
+    const costNum = parseFloat(formData.costPrice);
+    setFormData(prev => ({ ...prev, price: val }));
+    
+    if (!isNaN(costNum) && !isNaN(priceNum) && costNum > 0) {
+      const margin = ((priceNum - costNum) / costNum) * 100;
+      setProfitMargin(Math.round(margin));
+    }
+  };
 
   // Reset form when modal closes
   useEffect(() => {
@@ -411,7 +431,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                       <span className="absolute inset-y-0 left-0 pl-3 flex items-center font-bold text-slate-400">₦</span>
                       <input
                         type="number" required min="0" step="0.01" value={formData.costPrice}
-                        onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
+                        onChange={(e) => handleCostPriceChange(e.target.value)}
                         className="w-full pl-8 pr-4 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:bg-slate-900 dark:text-white transition-all shadow-sm font-bold"
                         placeholder="0.00"
                       />
@@ -426,7 +446,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                         <span className="text-[10px] text-slate-400 font-normal">Margin:</span>
                         <input
                           type="number" min="0" max="100" step="1" value={profitMargin}
-                          onChange={(e) => setProfitMargin(Number(e.target.value))}
+                          onChange={(e) => handleProfitMarginChange(Number(e.target.value))}
                           className="w-8 p-0 text-[10px] text-emerald-600 font-bold bg-transparent border-b border-emerald-200 focus:ring-0 text-center"
                         />
                         <span className="text-[10px] text-slate-400">%</span>
@@ -436,7 +456,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                       <span className="absolute inset-y-0 left-0 pl-3 flex items-center font-bold text-slate-400">₦</span>
                       <input
                         type="number" required min="0" step="0.01" value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        onChange={(e) => handlePriceChange(e.target.value)}
                         className="w-full pl-8 pr-4 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:bg-slate-900 dark:text-white transition-all shadow-sm font-bold text-emerald-700 dark:text-emerald-400"
                         placeholder="0.00"
                       />

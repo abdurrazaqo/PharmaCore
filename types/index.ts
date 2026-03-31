@@ -1,7 +1,29 @@
 export enum UserRole {
   SUPERADMIN = 'superadmin',
   TENANT_ADMIN = 'tenant_admin',
-  STAFF = 'staff'
+  BRANCH_ADMIN = 'branch_admin',
+  PHARMACIST = 'pharmacist',
+  PHARMACY_TECHNICIAN = 'pharmacy_technician',
+  CASHIER = 'cashier'
+}
+
+export enum TenantStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  GRACE_PERIOD = 'grace_period',
+  SUSPENDED = 'suspended',
+  DELETED = 'deleted'
+}
+
+export enum SubscriptionPlan {
+  BASIC = 'basic',
+  PRO = 'pro',
+  ENTERPRISE = 'enterprise'
+}
+
+export enum BillingCycle {
+  MONTHLY = 'monthly',
+  ANNUAL = 'annual'
 }
 
 export interface UserProfile {
@@ -10,11 +32,22 @@ export interface UserProfile {
   role: UserRole;
   branch_id?: string;
   display_name?: string;
+  is_suspended?: boolean;
   // Joined data
   tenant?: {
     id: string;
     name: string;
     subdomain?: string;
+    status: TenantStatus;
+    plan: SubscriptionPlan;
+    billing_cycle: BillingCycle;
+    subscription_expires_at?: string | null;
+    trial_ends_at?: string | null;
+    pending_plan?: string | null;
+    logo_url?: string | null;
+    is_gifted?: boolean;
+    gifted_until?: string | null;
+    onboarding_completed?: boolean;
   };
   branch?: {
     id: string;
@@ -69,3 +102,5 @@ export enum Page {
   REPORTS = 'reports',
   SETTINGS = 'settings'
 }
+
+export * from './receipt';

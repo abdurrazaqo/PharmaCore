@@ -23,7 +23,6 @@ const toSnakeCase = (obj: any): any => {
   }
   if (obj !== null && obj !== undefined && obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
-      // Skip undefined values so they don't break Supabase
       if (obj[key] === undefined) return result;
       const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
       result[snakeKey] = toSnakeCase(obj[key]);
@@ -33,31 +32,54 @@ const toSnakeCase = (obj: any): any => {
   return obj;
 };
 
-// Check if database is available
 const checkDatabase = () => {
   if (!isSupabaseConfigured()) {
     console.error('❌ Database: Supabase not configured');
     throw new Error('Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local');
   }
-  console.log('✅ Database: Supabase configured and ready');
+};
+
+// Tenant & Branch querying helpers
+const withTenantAndBranch = (query: any, tenantId: string, branchId?: string) => {
+  let q = query.eq('tenant_id', tenantId);
+  if (branchId) q = q.eq('branch_id', branchId);
+  return q;
+};
+
+// Users & Subscriptions
+export const getUsersByTenant = async (tenantId: string, branchId?: string) => {
+  checkDatabase();
+  let query = supabase!.from('users').select('*').eq('tenant_id', tenantId);
+  if (branchId) query = query.eq('branch_id', branchId);
+  
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw error;
+  
+  return toCamelCase(data);
+};
+
+export const getTenantSubscription = async (tenantId: string) => {
+  checkDatabase();
+  const { data, error } = await supabase!
+    .from('tenants')
+    .select('id, plan, billing_cycle, subscription_expires_at, trial_ends_at, status, pending_plan')
+    .eq('id', tenantId)
+    .single();
+    
+  if (error) throw error;
+  return toCamelCase(data);
 };
 
 // Generate next sequential invoice ID
-export const getNextInvoiceId = async (): Promise<string> => {
+export const getNextInvoiceId = async (tenantId: string, branchId?: string): Promise<string> => {
   checkDatabase();
-  const { data, error } = await supabase!
-    .from('transactions')
-    .select('id')
-    .order('created_at', { ascending: false })
-    .limit(1);
+  const query = withTenantAndBranch(supabase!.from('transactions').select('id'), tenantId, branchId);
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(1);
   
   if (error) throw error;
   
-  if (!data || data.length === 0) {
-    return 'INV-001';
-  }
+  if (!data || data.length === 0) return 'INV-001';
   
-  // Extract number from last invoice (e.g., "INV-005" -> 5)
   const lastId = data[0].id;
   const match = lastId.match(/INV-(\d+)/);
   
@@ -65,26 +87,23 @@ export const getNextInvoiceId = async (): Promise<string> => {
     const nextNum = parseInt(match[1]) + 1;
     return `INV-${nextNum.toString().padStart(3, '0')}`;
   }
-  
   return 'INV-001';
 };
 
 // Generate next sequential customer ID
-export const getNextCustomerId = async (): Promise<string> => {
+export const getNextCustomerId = async (tenantId: string): Promise<string> => {
   checkDatabase();
   const { data, error } = await supabase!
     .from('customers')
     .select('id')
+    .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
     .limit(1);
   
   if (error) throw error;
   
-  if (!data || data.length === 0) {
-    return 'PAT-001';
-  }
+  if (!data || data.length === 0) return 'PAT-001';
   
-  // Extract number from last customer ID (e.g., "PAT-005" -> 5)
   const lastId = data[0].id;
   const match = lastId.match(/PAT-(\d+)/);
   
@@ -92,25 +111,22 @@ export const getNextCustomerId = async (): Promise<string> => {
     const nextNum = parseInt(match[1]) + 1;
     return `PAT-${nextNum.toString().padStart(3, '0')}`;
   }
-  
   return 'PAT-001';
 };
 
 // Products
-export const getProducts = async () => {
+export const getProducts = async (tenantId: string, branchId?: string) => {
   checkDatabase();
-  const { data, error } = await supabase!
-    .from('products')
-    .select('*')
-    .order('name');
+  const query = withTenantAndBranch(supabase!.from('products').select('*'), tenantId, branchId);
+  const { data, error } = await query.order('name');
   
   if (error) throw error;
   return toCamelCase(data) as Product[];
 };
 
-export const addProduct = async (product: Omit<Product, 'id'>) => {
+export const addProduct = async (product: Omit<Product, 'id'>, tenantId: string, branchId?: string) => {
   checkDatabase();
-  const snakeProduct = toSnakeCase(product);
+  const snakeProduct = toSnakeCase({ ...product, tenantId, branchId });
   const { data, error } = await supabase!
     .from('products')
     .insert([snakeProduct])
@@ -121,46 +137,36 @@ export const addProduct = async (product: Omit<Product, 'id'>) => {
   return toCamelCase(data) as Product;
 };
 
-export const updateProduct = async (id: string, updates: Partial<Product>) => {
+export const updateProduct = async (id: string, updates: Partial<Product>, tenantId: string, branchId?: string) => {
   checkDatabase();
   const snakeUpdates = toSnakeCase(updates);
-  const { data, error } = await supabase!
-    .from('products')
-    .update(snakeUpdates)
-    .eq('id', id)
-    .select()
-    .single();
+  const query = withTenantAndBranch(supabase!.from('products').update(snakeUpdates), tenantId, branchId).eq('id', id);
+  const { data, error } = await query.select().single();
   
   if (error) throw error;
   return toCamelCase(data) as Product;
 };
 
-export const deleteProduct = async (id: string) => {
+export const deleteProduct = async (id: string, tenantId: string, branchId?: string) => {
   checkDatabase();
-  const { error } = await supabase!
-    .from('products')
-    .delete()
-    .eq('id', id);
-  
+  const query = withTenantAndBranch(supabase!.from('products').delete(), tenantId, branchId).eq('id', id);
+  const { error } = await query;
   if (error) throw error;
 };
 
 // Transactions
-export const getTransactions = async (limit = 10) => {
+export const getTransactions = async (tenantId: string, branchId?: string, limit = 10) => {
   checkDatabase();
-  const { data, error } = await supabase!
-    .from('transactions')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  const query = withTenantAndBranch(supabase!.from('transactions').select('*'), tenantId, branchId);
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(limit);
   
   if (error) throw error;
   return toCamelCase(data) as Transaction[];
 };
 
-export const addTransaction = async (transaction: Transaction) => {
+export const addTransaction = async (transaction: Transaction, tenantId: string, branchId?: string) => {
   checkDatabase();
-  const snakeTransaction = toSnakeCase(transaction);
+  const snakeTransaction = toSnakeCase({ ...transaction, tenantId, branchId });
   const { data, error } = await supabase!
     .from('transactions')
     .insert([snakeTransaction])
@@ -171,8 +177,7 @@ export const addTransaction = async (transaction: Transaction) => {
   return toCamelCase(data) as Transaction;
 };
 
-// Add sales items for a transaction
-export const addSalesItems = async (transactionId: string, items: Array<{productId: string, quantity: number, unitPrice: number, totalPrice: number}>) => {
+export const addSalesItems = async (transactionId: string, items: Array<{productId: string, quantity: number, unitPrice: number, totalPrice: number}>, tenantId: string) => {
   checkDatabase();
   
   const salesData = items.map(item => ({
@@ -180,7 +185,8 @@ export const addSalesItems = async (transactionId: string, items: Array<{product
     product_id: item.productId,
     quantity: item.quantity,
     unit_price: item.unitPrice,
-    total_price: item.totalPrice
+    total_price: item.totalPrice,
+    tenant_id: tenantId
   }));
 
   const { data, error } = await supabase!
@@ -190,12 +196,12 @@ export const addSalesItems = async (transactionId: string, items: Array<{product
 
   if (error) throw error;
   
-  // Update inventory - deduct sold quantities
   for (const item of items) {
     const { data: product, error: fetchError } = await supabase!
       .from('products')
-      .select('total_units')
+      .select('total_units, last_restock_quantity')
       .eq('id', item.productId)
+      .eq('tenant_id', tenantId)
       .single();
     
     if (fetchError) {
@@ -208,31 +214,31 @@ export const addSalesItems = async (transactionId: string, items: Array<{product
     const { error: updateError } = await supabase!
       .from('products')
       .update({ total_units: newQuantity })
-      .eq('id', item.productId);
+      .eq('id', item.productId)
+      .eq('tenant_id', tenantId);
     
-    if (updateError) {
-      console.error('Error updating inventory:', updateError);
-    }
+    if (updateError) console.error('Error updating inventory:', updateError);
   }
   
   return data;
 };
 
 // Customers
-export const getCustomers = async () => {
+export const getCustomers = async (tenantId: string) => {
   checkDatabase();
   const { data, error } = await supabase!
     .from('customers')
     .select('*')
+    .eq('tenant_id', tenantId)
     .order('name');
   
   if (error) throw error;
   return toCamelCase(data);
 };
 
-export const addCustomer = async (customer: any) => {
+export const addCustomer = async (customer: any, tenantId: string) => {
   checkDatabase();
-  const snakeCustomer = toSnakeCase(customer);
+  const snakeCustomer = toSnakeCase({ ...customer, tenantId });
   const { data, error } = await supabase!
     .from('customers')
     .insert([snakeCustomer])
@@ -243,13 +249,14 @@ export const addCustomer = async (customer: any) => {
   return toCamelCase(data);
 };
 
-export const updateCustomer = async (id: string, updates: any) => {
+export const updateCustomer = async (id: string, updates: any, tenantId: string) => {
   checkDatabase();
   const snakeUpdates = toSnakeCase(updates);
   const { data, error } = await supabase!
     .from('customers')
     .update(snakeUpdates)
     .eq('id', id)
+    .eq('tenant_id', tenantId)
     .select()
     .single();
   
@@ -257,22 +264,22 @@ export const updateCustomer = async (id: string, updates: any) => {
   return toCamelCase(data);
 };
 
-export const deleteCustomer = async (id: string) => {
+export const deleteCustomer = async (id: string, tenantId: string) => {
   checkDatabase();
   const { error } = await supabase!
     .from('customers')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('tenant_id', tenantId);
   
   if (error) throw error;
 };
 
 // Sales Analytics
-export const getSalesData = async (days = 7) => {
+export const getSalesData = async (tenantId: string, branchId?: string, days = 7) => {
   checkDatabase();
-  const { data, error } = await supabase!
-    .from('transactions')
-    .select('amount, created_at')
+  const query = withTenantAndBranch(supabase!.from('transactions').select('amount, created_at'), tenantId, branchId);
+  const { data, error } = await query
     .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
     .eq('status', 'Completed');
   
@@ -280,15 +287,13 @@ export const getSalesData = async (days = 7) => {
   return data;
 };
 
-// Get weekly sales trend for chart
-export const getWeeklySalesTrend = async () => {
+export const getWeeklySalesTrend = async (tenantId: string, branchId?: string) => {
   checkDatabase();
   
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const today = new Date();
   const weekData = [];
   
-  // Get last 7 days
   for (let i = 6; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
@@ -297,9 +302,8 @@ export const getWeeklySalesTrend = async () => {
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);
     
-    const { data, error } = await supabase!
-      .from('transactions')
-      .select('amount')
+    const query = withTenantAndBranch(supabase!.from('transactions').select('amount'), tenantId, branchId);
+    const { data, error } = await query
       .gte('created_at', date.toISOString())
       .lt('created_at', nextDay.toISOString())
       .eq('status', 'Completed');
@@ -307,18 +311,13 @@ export const getWeeklySalesTrend = async () => {
     if (error) throw error;
     
     const dayTotal = data?.reduce((sum, t) => sum + t.amount, 0) || 0;
-    
-    weekData.push({
-      name: daysOfWeek[date.getDay()],
-      sales: dayTotal
-    });
+    weekData.push({ name: daysOfWeek[date.getDay()], sales: dayTotal });
   }
   
   return weekData;
 };
 
-// Dashboard Stats - Optimized with parallel queries
-export const getDashboardStats = async () => {
+export const getDashboardStats = async (tenantId: string, branchId?: string) => {
   checkDatabase();
   
   const today = new Date();
@@ -327,26 +326,21 @@ export const getDashboardStats = async () => {
   const thirtyDaysFromNow = new Date();
   thirtyDaysFromNow.setDate(today.getDate() + 30);
   
-  // Execute all queries in parallel for better performance
+  const todayQuery = withTenantAndBranch(supabase!.from('transactions').select('amount'), tenantId, branchId)
+    .gte('created_at', today.toISOString())
+    .eq('status', 'Completed');
+    
+  const monthQuery = withTenantAndBranch(supabase!.from('transactions').select('amount'), tenantId, branchId)
+    .gte('created_at', firstDayOfMonth.toISOString())
+    .eq('status', 'Completed');
+    
+  const productsQuery = withTenantAndBranch(supabase!.from('products').select('price, total_units, cost_price, last_restock_quantity, expiry_date'), tenantId, branchId);
+  
   const [
     { data: todaySales, error: salesError },
     { data: monthSales, error: monthError },
     { data: allProducts, error: productsError }
-  ] = await Promise.all([
-    supabase!
-      .from('transactions')
-      .select('amount')
-      .gte('created_at', today.toISOString())
-      .eq('status', 'Completed'),
-    supabase!
-      .from('transactions')
-      .select('amount')
-      .gte('created_at', firstDayOfMonth.toISOString())
-      .eq('status', 'Completed'),
-    supabase!
-      .from('products')
-      .select('price, total_units, cost_price, last_restock_quantity, expiry_date')
-  ]);
+  ] = await Promise.all([ todayQuery, monthQuery, productsQuery ]);
   
   if (salesError) throw salesError;
   if (monthError) throw monthError;
@@ -355,27 +349,18 @@ export const getDashboardStats = async () => {
   const totalSales = todaySales?.reduce((sum, t) => sum + t.amount, 0) || 0;
   const monthlyRevenue = monthSales?.reduce((sum, t) => sum + t.amount, 0) || 0;
   
-  // Calculate low stock count (25% or less remaining)
   const lowStockCount = allProducts?.filter(p => {
-    const percentageRemaining = (p.total_units / p.last_restock_quantity) * 100;
+    const percentageRemaining = (p.total_units / (p.last_restock_quantity || 1)) * 100;
     return percentageRemaining <= 25;
   }).length || 0;
   
-  // Calculate expiring soon count (within 30 days)
   const expiringSoon = allProducts?.filter(p => {
     const expiryDate = new Date(p.expiry_date);
     return expiryDate <= thirtyDaysFromNow && expiryDate >= today;
   }).length || 0;
   
-  // Calculate profit margin from inventory
   if (!allProducts || allProducts.length === 0 || monthlyRevenue === 0) {
-    return {
-      totalSales,
-      monthlyRevenue,
-      profitMargin: 0,
-      lowStockCount,
-      expiringSoon
-    };
+    return { totalSales, monthlyRevenue, profitMargin: 0, lowStockCount, expiringSoon };
   }
   
   const totalRevenue = allProducts.reduce((sum, p) => sum + (p.price * p.total_units), 0);
@@ -390,4 +375,3 @@ export const getDashboardStats = async () => {
     expiringSoon
   };
 };
-

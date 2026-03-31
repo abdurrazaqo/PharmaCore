@@ -7,6 +7,8 @@ import { Product } from '../types';
 import { useToast } from './ToastContainer';
 import { useAuth, Permission } from '../contexts/AuthContext';
 import { getCategoryColor } from '../utils/categoryColors';
+import { useTenantGuard } from '../hooks/useTenantGuard';
+import ReadOnlyBadge from './ReadOnlyBadge';
 
 const Inventory: React.FC = () => {
   const [filter, setFilter] = useState('All');
@@ -14,6 +16,7 @@ const Inventory: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const { showToast } = useToast();
   const { hasPermission, profile } = useAuth();
+  const tenantGuard = useTenantGuard();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -57,9 +60,10 @@ const Inventory: React.FC = () => {
   }, []);
 
   const loadProducts = async () => {
+    if (!profile?.tenant?.id) return;
     try {
       setLoading(true);
-      const data = await getProducts();
+      const data = await getProducts(profile.tenant.id, profile.branch?.id);
       setProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -71,13 +75,13 @@ const Inventory: React.FC = () => {
   };
 
   const handleAddProduct = async (newProduct: any) => {
-    if (!hasPermission(Permission.INVENTORY_ADD)) {
+    if (!hasPermission(Permission.INVENTORY_ADD) || tenantGuard.isReadOnly) {
       showToast('You do not have permission to add products.', 'error');
       return;
     }
     
     try {
-      const added = await addProduct(newProduct);
+      const added = await addProduct(newProduct, profile!.tenant!.id, profile!.branch?.id);
       setProducts([...products, added]);
       showToast('Medicine added successfully!', 'success');
       setIsAddModalOpen(false); // Close modal after success
@@ -96,11 +100,11 @@ const Inventory: React.FC = () => {
   };
 
   const executeDeleteProduct = async () => {
-    if (!productToDelete) return;
+    if (!productToDelete || tenantGuard.isReadOnly) return;
     
     setIsDeleting(true);
     try {
-      await deleteProduct(productToDelete);
+      await deleteProduct(productToDelete, profile!.tenant!.id, profile!.branch?.id);
       setProducts(products.filter(p => p.id !== productToDelete));
       showToast('Medicine deleted successfully!', 'success');
       setProductToDelete(null);
@@ -129,13 +133,13 @@ const Inventory: React.FC = () => {
   };
 
   const handleUpdateProduct = async (id: string, updates: Partial<Product>) => {
-    if (!hasPermission(Permission.INVENTORY_EDIT)) {
+    if (!hasPermission(Permission.INVENTORY_EDIT) || tenantGuard.isReadOnly) {
       showToast('You do not have permission to update products.', 'error');
       return;
     }
     
     try {
-      const updated = await updateProduct(id, updates);
+      const updated = await updateProduct(id, updates, profile!.tenant!.id, profile!.branch?.id);
       setProducts(products.map(p => p.id === id ? updated : p));
       showToast('Medicine updated successfully!', 'success');
     } catch (error) {
@@ -272,8 +276,8 @@ const Inventory: React.FC = () => {
               <div className={`p-2 rounded-lg ${card.bg} dark:bg-opacity-20 ${card.color}`}>
                 <span className="material-symbols-outlined">{card.icon}</span>
               </div>
-              {card.change && <span className="text-xs font-medium text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">{card.change}</span>}
-              {card.action && <span className="text-xs font-medium text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full">{card.action}</span>}
+              {(card as any).change && <span className="text-xs font-medium text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">{(card as any).change}</span>}
+              {(card as any).action && <span className="text-xs font-medium text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full">{(card as any).action}</span>}
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">{card.label}</p>
             <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold mt-1 break-words ${card.color === 'text-rose-600' ? 'text-rose-600' : ''}`}>{card.value}</h3>
@@ -283,7 +287,10 @@ const Inventory: React.FC = () => {
 
       {/* Page Title with Export */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold dark:text-white">Inventory Management</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold dark:text-white">Inventory Management</h2>
+          {tenantGuard.isReadOnly && <ReadOnlyBadge />}
+        </div>
         {hasPermission(Permission.INVENTORY_EXPORT) && (
           <button 
             onClick={handleExportInventory}
@@ -306,16 +313,21 @@ const Inventory: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary outline-none min-w-[200px]"
           />
-          <select 
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary outline-none min-w-[160px] "
-          >
-            <option value="All">Category: All</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+          <div className="relative group">
+            <select 
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="appearance-none bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-xl pl-4 pr-10 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all dark:text-white hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer min-w-[160px]"
+            >
+              <option value="All">Category: All</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors text-[20px]">
+              expand_more
+            </span>
+          </div>
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
             {['All', 'Low Stock', 'Out of Stock', 'Near Expiry'].map((tab) => (
               <button
@@ -330,7 +342,7 @@ const Inventory: React.FC = () => {
             ))}
           </div>
         </div>
-        {hasPermission(Permission.INVENTORY_ADD) && (
+        {hasPermission(Permission.INVENTORY_ADD) && !tenantGuard.isReadOnly && (
           <button 
             onClick={() => setIsAddModalOpen(true)}
             className="w-full lg:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-primary/20 transition-all lg:shrink-0"
@@ -417,7 +429,7 @@ const Inventory: React.FC = () => {
                   </td>
                   <td className="px-1 md:px-2 py-2 text-right">
                     <div className="flex justify-end gap-1">
-                      {hasPermission(Permission.INVENTORY_EDIT) && (
+                      {hasPermission(Permission.INVENTORY_EDIT) && !tenantGuard.isReadOnly && (
                         <button 
                           onClick={() => handleEditProduct(prod)}
                           className="p-1 text-slate-400 hover:text-primary transition-colors"
@@ -426,7 +438,7 @@ const Inventory: React.FC = () => {
                           <span className="material-symbols-outlined text-base">edit</span>
                         </button>
                       )}
-                      {hasPermission(Permission.INVENTORY_DELETE) && (
+                      {hasPermission(Permission.INVENTORY_DELETE) && !tenantGuard.isReadOnly && (
                         <button 
                           onClick={() => requestDeleteProduct(prod.id)}
                           className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
@@ -435,7 +447,7 @@ const Inventory: React.FC = () => {
                           <span className="material-symbols-outlined text-base">delete</span>
                         </button>
                       )}
-                      {!hasPermission(Permission.INVENTORY_EDIT) && !hasPermission(Permission.INVENTORY_DELETE) && (
+                      {(!hasPermission(Permission.INVENTORY_EDIT) && !hasPermission(Permission.INVENTORY_DELETE) || tenantGuard.isReadOnly) && (
                         <span className="text-xs text-slate-400 italic px-2">View Only</span>
                       )}
                     </div>
