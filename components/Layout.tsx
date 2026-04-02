@@ -143,9 +143,9 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
   ];
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-screen lg:overflow-hidden">
       {tenantGuard.isDemo && <DemoBanner />}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300 overflow-y-auto lg:overflow-hidden">
         {/* Desktop Sidebar - Hidden on Mobile */}
       <aside className="hidden lg:flex w-56 bg-white dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex-col shrink-0">
         <div className="p-5">
@@ -190,7 +190,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* Mobile Header */}
-        <header className="h-14 lg:h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-surface-dark flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <header className="h-14 lg:h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-surface-dark flex items-center justify-between px-4 lg:px-8 lg:sticky top-0 z-10 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="flex items-center gap-3">
             {/* Mobile Menu Button */}
             <button 
@@ -309,7 +309,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
         )}
 
         {/* Content - with bottom padding on mobile for bottom nav */}
-        <div ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden pb-16 lg:pb-0">
+        <div ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden pb-20 lg:pb-0 min-h-0">
           <Outlet />
         </div>
       </main>
