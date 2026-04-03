@@ -16,14 +16,19 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const resendApiKey = Deno.env.get('RESEND_API_KEY') ?? ''
     
-    // Auth Check: Must be superadmin
-    const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') ?? '', {
-      global: { headers: { Authorization: req.headers.get('Authorization')! } }
-    })
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-    if (authError || !user) throw new Error("Unauthorized")
-
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+    
+    // Get user from Authorization header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) throw new Error("Missing authorization header")
+    
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError)
+      throw new Error("Unauthorized")
+    }
     
     // Verify role in public.users
     const { data: profile } = await supabaseAdmin.from('users').select('role').eq('id', user.id).single()
@@ -128,7 +133,12 @@ serve(async (req) => {
     })
 
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error('Approval error:', err)
+    return new Response(JSON.stringify({ 
+      error: err.message,
+      details: err.toString(),
+      stack: err.stack 
+    }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }

@@ -66,11 +66,14 @@ const SuperadminPending: React.FC = () => {
 
       if (error) {
         console.error('Edge Function error:', error);
-        throw new Error(error.message || "Approval failed");
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        throw new Error(error.message || error.toString() || "Approval failed");
       }
       
       if (!data || !data.success) {
-        throw new Error(data?.error || "Approval failed");
+        const errorMsg = data?.error || data?.details || "Approval failed";
+        console.error('Approval failed:', errorMsg);
+        throw new Error(errorMsg);
       }
       
       setRequests(prev => prev.filter(r => r.id !== selectedRequest.id));
