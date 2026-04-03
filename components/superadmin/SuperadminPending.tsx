@@ -49,81 +49,32 @@ const SuperadminPending: React.FC = () => {
     try {
       console.log('Starting approval for request:', selectedRequest.id);
       
-      // Check if user is authenticated and is superadmin
+      // Check if user is authenticated
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', session ? 'exists' : 'missing');
+      
       if (!session) {
         throw new Error("You are not logged in. Please refresh and try again.");
       }
       
-      // Verify user is superadmin
-      const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-      
-      if (profile?.role !== 'superadmin') {
-        throw new Error("You don't have superadmin privileges");
+      console.log('Calling approve-onboarding Edge Function...');
+      const { data, error } = await supabase.functions.invoke('approve-onboarding', {
+        body: { request_id: selectedRequest.id }
+      });
+
+      console.log('Edge Function response:', { data, error });
+
+      if (error) {
+        console.error('Edge Function error:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        throw new Error(error.message || error.toString() || "Approval failed");
       }
       
-      // Get access code info
-      const { data: accessCode } = await supabase
-        .from('access_codes')
-        .select('*')
-        .eq('code', selectedRequest.access_code)
-        .single();
-      
-      const isBeta = accessCode?.is_beta === true;
-      const giftedUntil = isBeta ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() : null;
-      
-      // Create tenant
-      const { data: tenant, error: tenantError } = await supabase
-        .from('tenants')
-        .insert([{
-          name: selectedRequest.pharmacy_name,
-          status: 'active',
-          plan: accessCode?.plan || 'basic',
-          billing_cycle: accessCode?.billing_cycle || 'monthly',
-          pharmacy_address: selectedRequest.pharmacy_address,
-          pharmacy_phone: selectedRequest.pharmacy_phone,
-          pharmacy_email: selectedRequest.pharmacy_email,
-          pcn_number: selectedRequest.pcn_number,
-          trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          approved_at: new Date().toISOString(),
-          is_gifted: isBeta,
-          gifted_until: giftedUntil
-        }])
-        .select()
-        .single();
-      
-      if (tenantError) throw tenantError;
-      
-      // Update onboarding request
-      const setupToken = crypto.randomUUID();
-      const { error: updateError } = await supabase
-        .from('onboarding_requests')
-        .update({
-          status: 'approved',
-          tenant_id: tenant.id,
-          setup_token: setupToken,
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: session.user.id
-        })
-        .eq('id', selectedRequest.id);
-      
-      if (updateError) throw updateError;
-      
-      // Log audit
-      await supabase.from('audit_logs').insert([{
-        action: 'onboarding.approved',
-        resource_type: 'onboarding_request',
-        resource_id: selectedRequest.id,
-        user_id: session.user.id,
-        new_values: { tenant_id: tenant.id }
-      }]);
-      
-      console.log('Approval successful!');
-      console.log('Setup link:', `https://pharmacore.365health.online/setup?token=${setupToken}`);
+      if (!data || !data.success) {
+        const errorMsg = data?.error || data?.details || "Approval failed";
+        console.error('Approval failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
       
       setRequests(prev => prev.filter(r => r.id !== selectedRequest.id));
       setModalType(null);
