@@ -73,7 +73,7 @@ export default function OnboardPage() {
 
       setFormData(prev => ({
         ...prev,
-        token: isFullToken ? value : '',
+        token: data.token || value, // Always store the full token UUID
         code: !isFullToken ? value : '',
         plan: data.plan,
         billingCycle: data.billing_cycle,
@@ -97,7 +97,7 @@ export default function OnboardPage() {
       const { error: insertError } = await supabase
         .from('onboarding_requests')
         .insert([{
-          access_code: formData.code || formData.token.substring(0, 8),
+          access_code: formData.token, // Use the full token UUID for foreign key
           pharmacy_name: formData.pharmacyName,
           pharmacy_address: formData.pharmacyAddress,
           pharmacy_email: formData.pharmacyEmail,

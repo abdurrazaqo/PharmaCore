@@ -19,5 +19,12 @@ export default defineConfig(({ mode }) => {
         }
       },
       envDir: '.',
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks: undefined,
+          }
+        }
+      }
     };
 });
