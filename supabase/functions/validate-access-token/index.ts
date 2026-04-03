@@ -70,6 +70,8 @@ serve(async (req) => {
     // Success
     return new Response(JSON.stringify({
       valid: true,
+      code: accessCode.code,
+      token: accessCode.token,
       plan: accessCode.plan,
       billing_cycle: accessCode.billing_cycle,
       buyer_email: accessCode.buyer_email,
