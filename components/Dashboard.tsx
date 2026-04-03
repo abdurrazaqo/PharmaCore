@@ -43,6 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   const [branches, setBranches] = useState<any[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>(profile?.branch?.id);
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
 
   useEffect(() => {
     if (profile?.tenant?.id && (isTenantAdmin() || isSuperAdmin())) {
@@ -212,21 +213,44 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
            {tenantGuard.isReadOnly && <ReadOnlyBadge />}
          </div>
          
-         {(isTenantAdmin() || isSuperAdmin()) && (
-           <div className="relative group">
-             <select 
-                value={selectedBranchId || ''} 
-                onChange={(e) => setSelectedBranchId(e.target.value || undefined)}
-                className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-4 pr-10 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all dark:text-white hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer min-w-[160px]"
+         {(isTenantAdmin() || isSuperAdmin()) && branches.length > 0 && (
+           <div className="relative">
+             <button
+               onClick={() => setShowBranchDropdown(!showBranchDropdown)}
+               className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-all dark:text-white min-w-[180px] justify-between"
              >
-                <option value="">All Branches</option>
-                {branches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-             </select>
-             <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors text-[20px]">
-               expand_more
-             </span>
+               <span>{selectedBranchId ? branches.find(b => b.id === selectedBranchId)?.name : 'All Branches'}</span>
+               <span className="material-symbols-outlined text-[20px] text-slate-400">expand_more</span>
+             </button>
+             
+             {showBranchDropdown && (
+               <>
+                 <div className="fixed inset-0 z-10" onClick={() => setShowBranchDropdown(false)} />
+                 <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl shadow-2xl py-2 overflow-hidden border border-slate-200 dark:border-slate-700 z-20">
+                   <button
+                     onClick={() => { setSelectedBranchId(undefined); setShowBranchDropdown(false); }}
+                     className={`w-full text-left px-4 py-2.5 text-sm font-bold flex justify-between items-center transition-colors ${
+                       !selectedBranchId ? 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                     }`}
+                   >
+                     <span>All Branches</span>
+                     {!selectedBranchId && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                   </button>
+                   {branches.map((branch) => (
+                     <button
+                       key={branch.id}
+                       onClick={() => { setSelectedBranchId(branch.id); setShowBranchDropdown(false); }}
+                       className={`w-full text-left px-4 py-2.5 text-sm font-bold flex justify-between items-center transition-colors ${
+                         selectedBranchId === branch.id ? 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                       }`}
+                     >
+                       <span>{branch.name}</span>
+                       {selectedBranchId === branch.id && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                     </button>
+                   ))}
+                 </div>
+               </>
+             )}
            </div>
          )}
       </div>
@@ -376,15 +400,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   let datePart = ''; let timePart = '';
                   try {
                     const dateTimeStr = tx.dateTime;
-                    if (dateTimeStr.includes(' at ')) { const parts = dateTimeStr.split(' at '); datePart = parts[0]; timePart = parts[1]; }
-                    else { const match = dateTimeStr.match(/^([A-Za-z]+\s+\d+),?\s+(.+)$/); if (match) { datePart = match[1]; timePart = match[2]; } else datePart = dateTimeStr; }
+                    // Check if it's an ISO timestamp
+                    if (dateTimeStr.includes('T') && dateTimeStr.includes('Z')) {
+                      const date = new Date(dateTimeStr);
+                      datePart = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      timePart = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    } else if (dateTimeStr.includes(' at ')) { 
+                      const parts = dateTimeStr.split(' at '); 
+                      datePart = parts[0]; 
+                      timePart = parts[1]; 
+                    } else { 
+                      const match = dateTimeStr.match(/^([A-Za-z]+\s+\d+),?\s+(.+)$/); 
+                      if (match) { 
+                        datePart = match[1]; 
+                        timePart = match[2]; 
+                      } else datePart = dateTimeStr; 
+                    }
                   } catch (e) { datePart = tx.dateTime; }
                   
                   return (
                 <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                  <td className="px-3 lg:px-6 py-4 font-mono text-xs lg:text-sm dark:text-slate-300">{tx.id}</td>
+                  <td className="px-3 lg:px-6 py-4 font-mono text-xs lg:text-sm dark:text-slate-300 break-all max-w-[100px] lg:max-w-none">{tx.id}</td>
                   <td className="px-6 py-4 hidden lg:table-cell"><div className="flex items-center gap-3"><div className="size-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold">{tx.initials}</div><span className="text-sm font-medium dark:text-white">{tx.customer}</span></div></td>
-                  <td className="px-3 lg:px-6 py-4"><div className="flex flex-col"><span className="text-xs font-medium dark:text-white">{datePart}</span>{timePart && <span className="text-[10px] text-slate-500">{timePart}</span>}</div></td>
+                  <td className="px-3 lg:px-6 py-4"><div className="flex flex-col"><span className="text-xs font-medium dark:text-white break-words">{datePart}</span>{timePart && <span className="text-[10px] text-slate-500 break-words">{timePart}</span>}</div></td>
                   <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-bold dark:text-white">₦{tx.amount.toFixed(2)}</td>
                   <td className="px-3 lg:px-6 py-4 hidden lg:table-cell"><span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${tx.paymentMethod === 'Cash' ? 'bg-green-100 text-green-700' : tx.paymentMethod === 'Card' ? 'bg-blue-100 text-blue-700' : tx.paymentMethod === 'Transfer' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700'}`}><span className="material-symbols-outlined text-xs">{tx.paymentMethod === 'Cash' ? 'payments' : tx.paymentMethod === 'Card' ? 'credit_card' : tx.paymentMethod === 'Transfer' ? 'swap_horiz' : 'help'}</span>{tx.paymentMethod || 'Cash'}</span></td>
                   <td className="px-6 py-4 hidden lg:table-cell"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tx.status === 'Completed' ? 'bg-green-100 text-green-800' : tx.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{tx.status}</span></td>

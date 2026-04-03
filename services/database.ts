@@ -302,13 +302,24 @@ export const getWeeklySalesTrend = async (tenantId: string, branchId?: string) =
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);
     
-    const query = withTenantAndBranch(supabase!.from('transactions').select('amount'), tenantId, branchId);
+    const query = withTenantAndBranch(supabase!.from('transactions').select('amount, date_time, created_at'), tenantId, branchId);
     const { data, error } = await query
-      .gte('created_at', date.toISOString())
-      .lt('created_at', nextDay.toISOString())
+      .gte('date_time', date.toISOString())
+      .lt('date_time', nextDay.toISOString())
       .eq('status', 'Completed');
     
-    if (error) throw error;
+    if (error) {
+      // Fallback to created_at if date_time doesn't exist
+      const fallbackQuery = withTenantAndBranch(supabase!.from('transactions').select('amount'), tenantId, branchId);
+      const { data: fallbackData } = await fallbackQuery
+        .gte('created_at', date.toISOString())
+        .lt('created_at', nextDay.toISOString())
+        .eq('status', 'Completed');
+      
+      const dayTotal = fallbackData?.reduce((sum, t) => sum + t.amount, 0) || 0;
+      weekData.push({ name: daysOfWeek[date.getDay()], sales: dayTotal });
+      continue;
+    }
     
     const dayTotal = data?.reduce((sum, t) => sum + t.amount, 0) || 0;
     weekData.push({ name: daysOfWeek[date.getDay()], sales: dayTotal });

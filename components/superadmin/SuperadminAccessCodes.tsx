@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getAccessCodes } from '../../services/superadminService';
+import { useToast } from '../ToastContainer';
 
 const SuperadminAccessCodes: React.FC = () => {
+  const { showToast } = useToast();
   const [codes, setCodes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -101,7 +103,7 @@ const SuperadminAccessCodes: React.FC = () => {
                     <button 
                       onClick={() => {
                         navigator.clipboard.writeText(`https://pharmacore.365health.online/onboard?token=${code.token}`);
-                        alert('Onboarding link copied!');
+                        showToast('Onboarding link copied!', 'success');
                       }}
                       className="text-[#006C75] p-2 hover:bg-teal-50 border border-transparent hover:border-teal-100 rounded-xl transition-all shadow-sm active:scale-95"
                       title="Copy Onboarding Link"

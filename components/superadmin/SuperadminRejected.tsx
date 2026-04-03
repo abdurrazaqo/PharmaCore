@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getOnboardingRequests, reconsiderOnboardingRequest, OnboardingRequest } from '../../services/superadminService';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../ToastContainer';
 const SuperadminRejected: React.FC = () => {
+  const { showToast } = useToast();
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
@@ -28,8 +30,9 @@ const SuperadminRejected: React.FC = () => {
     try {
       await reconsiderOnboardingRequest(id);
       setRequests(prev => prev.filter(r => r.id !== id));
+      showToast('Request moved back to pending queue', 'success');
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message, 'error');
     } finally {
       setIsProcessing(null);
     }

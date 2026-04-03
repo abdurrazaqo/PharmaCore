@@ -27,7 +27,9 @@ export interface OnboardingRequest {
 
 // Fetch platform overview metrics
 export async function getPlatformMetrics(): Promise<PlatformMetrics> {
-  // Using multiple queries for precision
+  const DEMO_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+  
+  // Using multiple queries for precision, excluding demo tenant
   const [
     { count: total }, 
     { count: active }, 
@@ -36,11 +38,11 @@ export async function getPlatformMetrics(): Promise<PlatformMetrics> {
     { count: grace },
     { data: revenueData }
   ] = await Promise.all([
-    supabase.from('tenants').select('*', { count: 'exact', head: true }).neq('status', 'deleted'),
-    supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    supabase.from('tenants').select('*', { count: 'exact', head: true }).neq('status', 'deleted').neq('id', DEMO_TENANT_ID),
+    supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'active').neq('id', DEMO_TENANT_ID),
     supabase.from('onboarding_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabase.from('tenants').select('*', { count: 'exact', head: true }).gt('trial_ends_at', new Date().toISOString()),
-    supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'grace_period'),
+    supabase.from('tenants').select('*', { count: 'exact', head: true }).gt('trial_ends_at', new Date().toISOString()).neq('id', DEMO_TENANT_ID),
+    supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'grace_period').neq('id', DEMO_TENANT_ID),
     supabase.from('access_codes').select('amount_paid').eq('status', 'used')
   ]);
 
@@ -203,7 +205,9 @@ export async function extendSubscription(tenantId: string, days: number) {
 }
 
 export async function getTenants(filters: any = {}) {
-  let query = supabase.from('tenants').select('*, users(count)');
+  const DEMO_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+  
+  let query = supabase.from('tenants').select('*, users(count)').neq('id', DEMO_TENANT_ID);
   
   if (filters.status && filters.status !== 'all') query = query.eq('status', filters.status);
   if (filters.plan && filters.plan !== 'all') query = query.eq('plan', filters.plan);
@@ -258,7 +262,14 @@ export async function reconsiderOnboardingRequest(requestId: string) {
 
 export async function generateBetaInvite(): Promise<string> {
   const token = crypto.randomUUID();
-  const code = `BETA-${crypto.randomUUID().split('-')[1].toUpperCase()}`;
+  
+  // Generate code in PHC-XXXX-XXXX format to match validation expectations
+  const stripped = token.replace(/-/g, '');
+  const first8 = stripped.substring(0, 8);
+  const g1 = first8.substring(0, 4).toUpperCase();
+  const g2 = first8.substring(4, 8).toUpperCase();
+  const code = `PHC-${g1}-${g2}`;
+  
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const { error } = await supabase

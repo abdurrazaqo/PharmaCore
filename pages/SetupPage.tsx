@@ -27,6 +27,8 @@ export default function SetupPage() {
   const [error, setError] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<any>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showTokenEntry, setShowTokenEntry] = useState(false);
+  const [manualToken, setManualToken] = useState('');
 
   const [formData, setFormData] = useState({
     pharmacyName: '',
@@ -44,21 +46,27 @@ export default function SetupPage() {
 
   useEffect(() => {
     if (!setupToken) {
-      setError("No setup token provided. Please check your email link.");
+      setShowTokenEntry(true);
       setIsLoading(false);
       return;
     }
     validateToken();
   }, [setupToken]);
 
-  const validateToken = async () => {
+  const validateToken = async (tokenToValidate?: string) => {
+    const token = tokenToValidate || setupToken;
+    if (!token) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
     try {
       const { data, error: functionError } = await supabase.functions.invoke('validate-setup-token', {
-        body: { token: setupToken },
+        body: { token },
       });
 
       if (functionError || !data.valid) {
-        throw new Error(data?.error || "Invalid setup link");
+        throw new Error(data?.error || "Invalid setup token");
       }
 
       setPrefill(data);
@@ -71,8 +79,12 @@ export default function SetupPage() {
         adminName: data.contact_person_name || '',
         adminEmail: data.pharmacy_email || ''
       });
+      setShowTokenEntry(false);
     } catch (err: any) {
       setError(err.message);
+      if (!setupToken) {
+        setShowTokenEntry(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +123,7 @@ export default function SetupPage() {
     try {
       const { data, error: functionError } = await supabase.functions.invoke('complete-setup', {
         body: {
-          setup_token: setupToken,
+          setup_token: manualToken || setupToken,
           pharmacy_name: formData.pharmacyName,
           pharmacy_email: formData.pharmacyEmail,
           pharmacy_phone: formData.pharmacyPhone,
@@ -155,7 +167,7 @@ export default function SetupPage() {
     );
   }
 
-  if (error && !prefill && !isSubmitting) {
+  if (error && !prefill && !isSubmitting && !showTokenEntry) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col font-inter">
         <OnboardHeader />
@@ -165,8 +177,58 @@ export default function SetupPage() {
           </div>
           <h2 className="text-2xl font-bold text-slate-800 mb-2">Invalid Setup Link</h2>
           <p className="text-slate-500 max-w-sm mb-8">{error}</p>
-          <p className="text-sm text-slate-400">If you believe this is an error, please contact <a href="mailto:hello@365health.online" className="text-[#006C75] font-bold">hello@365health.online</a></p>
+          <button
+            onClick={() => setShowTokenEntry(true)}
+            className="bg-[#006C75] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#005a62] transition-all"
+          >
+            Enter Setup Token Manually
+          </button>
+          <p className="text-sm text-slate-400 mt-6">If you believe this is an error, please contact <a href="mailto:hello@365health.online" className="text-[#006C75] font-bold">hello@365health.online</a></p>
         </div>
+        <OnboardFooter />
+      </div>
+    );
+  }
+
+  if (showTokenEntry && !prefill) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col font-inter">
+        <OnboardHeader />
+        <main className="flex-1 max-w-2xl w-full mx-auto p-4 md:p-8">
+          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-12 text-center">
+            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <span className="material-symbols-outlined text-3xl text-slate-400">key</span>
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Enter Your Setup Token</h2>
+            <p className="text-slate-500 mb-8 max-w-sm mx-auto">Enter the setup token you received after your onboarding was approved.</p>
+            
+            <div className="max-w-md mx-auto mb-6">
+              <input 
+                type="text"
+                placeholder="Enter setup token"
+                className="w-full text-center text-lg font-mono py-4 px-6 rounded-2xl border-2 border-slate-200 focus:border-[#006C75] focus:outline-none transition-all"
+                value={manualToken}
+                onChange={(e) => setManualToken(e.target.value)}
+              />
+              {error && <p className="text-red-500 text-sm mt-3 font-medium">{error}</p>}
+            </div>
+
+            <div className="flex justify-center">
+              <button 
+                onClick={() => validateToken(manualToken)}
+                disabled={!manualToken || isLoading}
+                className="w-full max-w-xs bg-[#006C75] text-white py-4 rounded-2xl font-bold shadow-lg shadow-[#006C75]/20 hover:bg-[#005a62] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+              >
+                {isLoading ? 'Verifying...' : 'Verify Token'}
+                {!isLoading && <span className="material-symbols-outlined">arrow_forward</span>}
+              </button>
+            </div>
+            
+            <p className="mt-8 text-sm text-slate-400">
+              Lost your token? Contact support at <a href="mailto:hello@365health.online" className="text-[#006C75] hover:underline font-medium">hello@365health.online</a>
+            </p>
+          </div>
+        </main>
         <OnboardFooter />
       </div>
     );

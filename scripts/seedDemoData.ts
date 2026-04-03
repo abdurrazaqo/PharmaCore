@@ -13,7 +13,16 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false,
+  },
+  global: {
+    fetch: (...args) => {
+      return fetch(...args);
+    },
+  },
+});
 
 async function runSeed() {
   console.log('[SEED] Building Demo Data payload...');
@@ -23,38 +32,71 @@ async function runSeed() {
 
   try {
     console.log('[SEED] Wiping old operational demo data...');
-    // Wipe order matters due to foreign keys: sales -> transactions -> customers/products
-    await supabase.from('sales').delete().eq('tenant_id', DEMO_TENANT_ID);
-    await supabase.from('transactions').delete().eq('tenant_id', DEMO_TENANT_ID);
-    await supabase.from('customers').delete().eq('tenant_id', DEMO_TENANT_ID);
-    await supabase.from('products').delete().eq('tenant_id', DEMO_TENANT_ID);
+    console.log('[SEED] Deleting sales...');
+    const { error: salesDeleteError } = await supabase.from('sales').delete().eq('tenant_id', DEMO_TENANT_ID);
+    if (salesDeleteError) throw salesDeleteError;
+    
+    console.log('[SEED] Deleting transactions...');
+    const { error: txDeleteError } = await supabase.from('transactions').delete().eq('tenant_id', DEMO_TENANT_ID);
+    if (txDeleteError) throw txDeleteError;
+    
+    console.log('[SEED] Deleting customers...');
+    const { error: custDeleteError } = await supabase.from('customers').delete().eq('tenant_id', DEMO_TENANT_ID);
+    if (custDeleteError) throw custDeleteError;
+    
+    console.log('[SEED] Deleting products...');
+    const { error: prodDeleteError } = await supabase.from('products').delete().eq('tenant_id', DEMO_TENANT_ID);
+    if (prodDeleteError) throw prodDeleteError;
 
     console.log('[SEED] Hard deletions successful. Inserting fresh records...');
 
-    // 1. Insert Products
-    const { error: pErr } = await supabase.from('products').insert(products);
-    if (pErr) throw pErr;
+    // 1. Insert Products in batches
+    console.log('[SEED] Inserting products...');
+    const batchSize = 10;
+    for (let i = 0; i < products.length; i += batchSize) {
+      const batch = products.slice(i, i + batchSize);
+      const { error: pErr } = await supabase.from('products').insert(batch);
+      if (pErr) throw pErr;
+      console.log(`  ✓ Inserted products ${i + 1}-${Math.min(i + batchSize, products.length)}`);
+    }
     console.log('✅ Products seeded');
 
     // 2. Insert Customers
+    console.log('[SEED] Inserting customers...');
     const { error: cErr } = await supabase.from('customers').insert(customers);
     if (cErr) throw cErr;
     console.log('✅ Customers seeded');
 
-    // 3. Transactions (batch in 100s safely)
-    const { error: txErr } = await supabase.from('transactions').insert(transactions);
-    if (txErr) throw txErr;
+    // 3. Transactions (batch in 20s)
+    console.log('[SEED] Inserting transactions...');
+    for (let i = 0; i < transactions.length; i += 20) {
+      const batch = transactions.slice(i, i + 20);
+      const { error: txErr } = await supabase.from('transactions').insert(batch);
+      if (txErr) throw txErr;
+      console.log(`  ✓ Inserted transactions ${i + 1}-${Math.min(i + 20, transactions.length)}`);
+    }
     console.log('✅ Transactions seeded');
 
-    // 4. Sales Items (in chunks if large, but there are ~250 items, should be fine)
-    const { error: sErr } = await supabase.from('sales').insert(salesItems);
-    if (sErr) throw sErr;
+    // 4. Sales Items (in chunks of 50)
+    console.log('[SEED] Inserting sales items...');
+    for (let i = 0; i < salesItems.length; i += 50) {
+      const batch = salesItems.slice(i, i + 50);
+      const { error: sErr } = await supabase.from('sales').insert(batch);
+      if (sErr) throw sErr;
+      console.log(`  ✓ Inserted sales ${i + 1}-${Math.min(i + 50, salesItems.length)}`);
+    }
     console.log('✅ Sales seeded');
 
-    console.log('[SUCCESS] Successfully recreated PharmaCore demo environment!');
+    console.log('\n[SUCCESS] Successfully recreated PharmaCore demo environment!');
+    console.log(`  - ${products.length} products`);
+    console.log(`  - ${customers.length} customers`);
+    console.log(`  - ${transactions.length} transactions`);
+    console.log(`  - ${salesItems.length} sales items`);
     process.exit(0);
-  } catch (err) {
-    console.error('[ERROR]', err);
+  } catch (err: any) {
+    console.error('\n[ERROR] Seed failed:', err.message);
+    if (err.details) console.error('Details:', err.details);
+    if (err.hint) console.error('Hint:', err.hint);
     process.exit(1);
   }
 }

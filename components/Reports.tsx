@@ -21,6 +21,7 @@ const Reports: React.FC = () => {
   
   const [branches, setBranches] = useState<any[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>(profile?.branch?.id);
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
 
   const [startDate, setStartDate] = useState<Date>(() => {
     const date = new Date();
@@ -261,45 +262,72 @@ const Reports: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-8 animate-in zoom-in-95 duration-500">
-      <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-4">
-         <div className="flex items-center gap-3">
+    <div className="p-4 lg:p-8 max-w-[1400px] mx-auto space-y-6 lg:space-y-8 animate-in zoom-in-95 duration-500">
+      <div className="flex flex-col gap-3 lg:gap-4 mb-4">
+         <div className="flex items-center justify-between">
            <h2 className="text-xl font-bold dark:text-white">Business Intelligence</h2>
          </div>
          
-         <div className="flex items-center gap-4">
-           {(isTenantAdmin() || isSuperAdmin()) && (
-             <div className="relative group">
-               <select 
-                  value={selectedBranchId || ''} 
-                  onChange={(e) => setSelectedBranchId(e.target.value || undefined)}
-                  className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-4 pr-10 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all dark:text-white hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer min-w-[160px]"
+         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+           {(isTenantAdmin() || isSuperAdmin()) && branches.length > 0 && (
+             <div className="relative flex-1 sm:flex-none">
+               <button
+                 onClick={() => setShowBranchDropdown(!showBranchDropdown)}
+                 className="w-full flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-all dark:text-white sm:min-w-[180px] justify-between"
                >
-                  <option value="">All Branches</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-               </select>
-               <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors text-[20px]">
-                 expand_more
-               </span>
+                 <span className="truncate">{selectedBranchId ? branches.find(b => b.id === selectedBranchId)?.name : 'All Branches'}</span>
+                 <span className="material-symbols-outlined text-[20px] text-slate-400 flex-shrink-0">expand_more</span>
+               </button>
+               
+               {showBranchDropdown && (
+                 <>
+                   <div className="fixed inset-0 z-10" onClick={() => setShowBranchDropdown(false)} />
+                   <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl shadow-2xl py-2 overflow-hidden border border-slate-200 dark:border-slate-700 z-20">
+                     <button
+                       onClick={() => { setSelectedBranchId(undefined); setShowBranchDropdown(false); }}
+                       className={`w-full text-left px-4 py-2.5 text-sm font-bold flex justify-between items-center transition-colors ${
+                         !selectedBranchId ? 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                       }`}
+                     >
+                       <span>All Branches</span>
+                       {!selectedBranchId && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                     </button>
+                     {branches.map((branch) => (
+                       <button
+                         key={branch.id}
+                         onClick={() => { setSelectedBranchId(branch.id); setShowBranchDropdown(false); }}
+                         className={`w-full text-left px-4 py-2.5 text-sm font-bold flex justify-between items-center transition-colors ${
+                           selectedBranchId === branch.id ? 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                         }`}
+                       >
+                         <span>{branch.name}</span>
+                         {selectedBranchId === branch.id && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                       </button>
+                     ))}
+                   </div>
+                 </>
+               )}
              </div>
            )}
-           <div className="flex gap-2 w-full lg:w-auto">
+           
+           <div className="flex gap-2 flex-1 sm:flex-none">
              {hasPermission(Permission.REPORTS_EXPORT) && (
                <button 
                  onClick={handleExportPDF}
-                 className="flex-1 lg:flex-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                 className="flex-1 sm:flex-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all whitespace-nowrap"
                >
-                 <span className="material-symbols-outlined text-lg">download</span> Export PDF
+                 <span className="material-symbols-outlined text-base sm:text-lg">download</span>
+                 <span className="hidden sm:inline">Export PDF</span>
+                 <span className="sm:hidden">PDF</span>
                </button>
              )}
-             <div className="relative flex-1 lg:flex-none">
+             <div className="relative flex-1 sm:flex-none">
                <button 
                  onClick={handleDateRangeChange}
-                 className="w-full bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                 className="w-full bg-primary text-white px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                >
-                 <span className="material-symbols-outlined text-lg">calendar_month</span> {dateRange}
+                 <span className="material-symbols-outlined text-base sm:text-lg">calendar_month</span>
+                 <span>{dateRange}</span>
                </button>
                {showDatePicker && (
                  <div className="absolute right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-4 z-50 min-w-[200px]">

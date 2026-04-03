@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { getTenants, suspendTenant, reactivateTenant, changeTenantPlan, extendSubscription, deleteTenant } from '../../services/superadminService';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../services/supabaseClient';
+import { useToast } from '../ToastContainer';
 
 const SuperadminPharmacies: React.FC = () => {
   const { filter } = useParams();
+  const { showToast } = useToast();
   const [tenants, setTenants] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -21,6 +23,10 @@ const SuperadminPharmacies: React.FC = () => {
   const [extensionDays, setExtensionDays] = useState(30);
   const [confirmDeleteName, setConfirmDeleteName] = useState('');
   const [notificationType, setNotificationType] = useState('trial_reminder');
+  
+  // Dropdown states
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
 
   useEffect(() => {
     loadTenants();
@@ -42,11 +48,11 @@ const SuperadminPharmacies: React.FC = () => {
     setIsProcessing(true);
     try {
       await action();
-      alert(successMsg);
+      showToast(successMsg, 'success');
       setActionModal(null);
       loadTenants();
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message, 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -59,10 +65,10 @@ const SuperadminPharmacies: React.FC = () => {
         body: { tenant_id: selectedTenant.id, notification_type: notificationType }
       });
       if (error || data?.error) throw error || new Error(data?.error);
-      alert(`Notification sent successfully to ${selectedTenant.pharmacy_email}`);
+      showToast(`Notification sent successfully to ${selectedTenant.pharmacy_email}`, 'success');
       setActionModal(null);
     } catch (err: any) {
-      alert(`Failed: ${err.message}`);
+      showToast(`Failed: ${err.message}`, 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -108,18 +114,49 @@ const SuperadminPharmacies: React.FC = () => {
           />
         </div>
         <div className="flex gap-2 min-w-0">
-           <select 
-             className="flex-1 md:w-48 md:flex-none bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-[#006C75]/20 truncate"
-             value={statusFilter}
-             onChange={(e) => setStatusFilter(e.target.value)}
-           >
-             <option value="all">All Statuses</option>
-             <option value="active">Active</option>
-             <option value="trial">In Trial</option>
-             <option value="suspended">Suspended</option>
-             <option value="grace_period">Grace Period</option>
-             <option value="deleted">Deleted</option>
-           </select>
+          <div className="relative flex-1 md:w-48 md:flex-none">
+            <button
+              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+              className="w-full flex items-center gap-2 bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-[#006C75]/20 truncate justify-between"
+            >
+              <span className="truncate">
+                {statusFilter === 'all' ? 'All Statuses' : 
+                 statusFilter === 'active' ? 'Active' :
+                 statusFilter === 'trial' ? 'In Trial' :
+                 statusFilter === 'suspended' ? 'Suspended' :
+                 statusFilter === 'grace_period' ? 'Grace Period' :
+                 statusFilter === 'deleted' ? 'Deleted' : 'All Statuses'}
+              </span>
+              <span className="material-symbols-outlined text-[20px] text-slate-400">expand_more</span>
+            </button>
+            
+            {showStatusDropdown && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowStatusDropdown(false)} />
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white text-slate-800 rounded-xl shadow-2xl py-2 overflow-hidden border border-slate-200 z-20">
+                  {[
+                    { value: 'all', label: 'All Statuses' },
+                    { value: 'active', label: 'Active' },
+                    { value: 'trial', label: 'In Trial' },
+                    { value: 'suspended', label: 'Suspended' },
+                    { value: 'grace_period', label: 'Grace Period' },
+                    { value: 'deleted', label: 'Deleted' }
+                  ].map((status) => (
+                    <button
+                      key={status.value}
+                      onClick={() => { setStatusFilter(status.value); setShowStatusDropdown(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold flex justify-between items-center transition-colors ${
+                        statusFilter === status.value ? 'bg-slate-50 text-slate-900' : 'hover:bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      <span>{status.label}</span>
+                      {statusFilter === status.value && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -257,16 +294,45 @@ const SuperadminPharmacies: React.FC = () => {
             
             <div className="space-y-4 mb-8">
               <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">Notification Type</label>
-              <select 
-                className="w-full py-4 px-5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#006C75] focus:ring-1 focus:ring-[#006C75] font-bold text-slate-700"
-                value={notificationType}
-                onChange={(e) => setNotificationType(e.target.value)}
-              >
-                <option value="trial_reminder">Trial Reminder Notice</option>
-                <option value="renewal_reminder">Subscription Renewal Reminder</option>
-                <option value="grace_period">Grace Period (Expired) Notice</option>
-                <option value="suspended">Account Suspension Notice</option>
-              </select>
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+                  className="w-full flex items-center gap-2 py-4 px-5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#006C75] focus:ring-1 focus:ring-[#006C75] font-bold text-slate-700 justify-between"
+                >
+                  <span>
+                    {notificationType === 'trial_reminder' ? 'Trial Reminder Notice' :
+                     notificationType === 'renewal_reminder' ? 'Subscription Renewal Reminder' :
+                     notificationType === 'grace_period' ? 'Grace Period (Expired) Notice' :
+                     notificationType === 'suspended' ? 'Account Suspension Notice' : 'Select Type'}
+                  </span>
+                  <span className="material-symbols-outlined text-[20px] text-slate-400">expand_more</span>
+                </button>
+                
+                {showNotificationDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowNotificationDropdown(false)} />
+                    <div className="absolute left-0 top-full mt-2 w-full bg-white text-slate-800 rounded-xl shadow-2xl py-2 overflow-hidden border border-slate-200 z-20">
+                      {[
+                        { value: 'trial_reminder', label: 'Trial Reminder Notice' },
+                        { value: 'renewal_reminder', label: 'Subscription Renewal Reminder' },
+                        { value: 'grace_period', label: 'Grace Period (Expired) Notice' },
+                        { value: 'suspended', label: 'Account Suspension Notice' }
+                      ].map((type) => (
+                        <button
+                          key={type.value}
+                          onClick={() => { setNotificationType(type.value); setShowNotificationDropdown(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm font-bold flex justify-between items-center transition-colors ${
+                            notificationType === type.value ? 'bg-slate-50 text-slate-900' : 'hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <span>{type.label}</span>
+                          {notificationType === type.value && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             
             <div className="flex gap-4">

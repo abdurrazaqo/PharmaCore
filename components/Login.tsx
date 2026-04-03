@@ -61,7 +61,7 @@ const Login: React.FC = () => {
         <p className="mt-2 text-center text-xs sm:text-sm text-slate-600 dark:text-slate-400">
           Or{' '}
           <a href="https://www.365health.online/products/pharmacore" target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:text-primary/80">
-            sign up or try live demo here
+            sign up here
           </a>
         </p>
       </div>

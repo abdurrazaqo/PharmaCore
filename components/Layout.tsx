@@ -138,7 +138,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
     ...(permissions.canManageCustomers ? [{ id: Page.CUSTOMERS, label: 'Patients', icon: 'group', shortLabel: 'Patients' }] : []),
     ...(permissions.canViewReports ? [{ id: Page.REPORTS, label: 'Reports', icon: 'bar_chart', shortLabel: 'Reports' }] : []),
     ...(permissions.canManageUsers ? [{ id: 'users', label: 'User Management', icon: 'manage_accounts', shortLabel: 'Users' }] : []),
-    ...(permissions.canManageSubscription ? [{ id: 'subscription', label: 'Subscription', icon: 'card_membership', shortLabel: 'Plan' }] : []),
+    ...(permissions.canManageSubscription && !tenantGuard.isDemo ? [{ id: 'subscription', label: 'Subscription', icon: 'card_membership', shortLabel: 'Plan' }] : []),
     ...(permissions.canAccessSuperadminDashboard ? [{ id: 'superadmin', label: 'Superadmin Console', icon: 'admin_panel_settings', shortLabel: 'Admin' }] : []),
   ];
 
@@ -217,7 +217,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
               </div>
               <div className="text-left">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  {tenantGuard.isDemo ? '365Demo Pharmacy 🔬' : (profile?.tenant?.name || 'Main Pharmacy')}
+                  {tenantGuard.isDemo ? '365Demo Pharmacy' : (profile?.tenant?.name || 'Main Pharmacy')}
                   {tenantGuard.isDemo && <span className="text-[9px] bg-orange-500/20 text-orange-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest">Demo</span>}
                 </p>
                 <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
@@ -259,13 +259,15 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
               >
                 <span className="material-symbols-outlined text-xl lg:text-2xl">help</span>
               </a>
-              <button 
-                onClick={() => setIsChangePasswordOpen(true)}
-                className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                title="Change Password"
-              >
-                <span className="material-symbols-outlined text-xl lg:text-2xl">lock_reset</span>
-              </button>
+              {!tenantGuard.isDemo && (
+                <button 
+                  onClick={() => setIsChangePasswordOpen(true)}
+                  className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  title="Change Password"
+                >
+                  <span className="material-symbols-outlined text-xl lg:text-2xl">lock_reset</span>
+                </button>
+              )}
               <button 
                 onClick={logout}
                 className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
@@ -336,7 +338,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    {tenantGuard.isDemo ? '365Demo Pharmacy 🔬' : (profile?.tenant?.name || 'Main Pharmacy')}
+                    {tenantGuard.isDemo ? '365Demo Pharmacy' : (profile?.tenant?.name || 'Main Pharmacy')}
                     {tenantGuard.isDemo && <span className="text-[9px] bg-orange-500/20 text-orange-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest">Demo</span>}
                   </p>
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
@@ -400,17 +402,19 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
                 </div>
               </div>
 
-              {/* Change Password Button */}
-              <button 
-                onClick={() => {
-                  setIsChangePasswordOpen(true);
-                  setIsMenuOpen(false);
-                }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-medium mb-3"
-              >
-                <span className="material-symbols-outlined">lock_reset</span>
-                <span>Change Password</span>
-              </button>
+              {/* Change Password Button - Hidden in Demo */}
+              {!tenantGuard.isDemo && (
+                <button 
+                  onClick={() => {
+                    setIsChangePasswordOpen(true);
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-medium mb-3"
+                >
+                  <span className="material-symbols-outlined">lock_reset</span>
+                  <span>Change Password</span>
+                </button>
+              )}
 
               {/* Sign Out Button */}
               <button 

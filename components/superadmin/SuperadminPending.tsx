@@ -3,8 +3,10 @@ import { getOnboardingRequests, OnboardingRequest } from '../../services/superad
 import { supabase } from '../../services/supabaseClient';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { useToast } from '../ToastContainer';
 
 const SuperadminPending: React.FC = () => {
+  const { showToast } = useToast();
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
@@ -52,8 +54,9 @@ const SuperadminPending: React.FC = () => {
       
       setRequests(prev => prev.filter(r => r.id !== selectedRequest.id));
       setModalType(null);
+      showToast('Onboarding request approved successfully', 'success');
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message, 'error');
     } finally {
       setIsProcessing(null);
     }
@@ -72,8 +75,9 @@ const SuperadminPending: React.FC = () => {
       setRequests(prev => prev.filter(r => r.id !== selectedRequest.id));
       setModalType(null);
       setRejectionReason('');
+      showToast('Onboarding request rejected', 'success');
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message, 'error');
     } finally {
       setIsProcessing(null);
     }

@@ -352,7 +352,7 @@ const UserManagement: React.FC = () => {
                         <div className="size-7 lg:size-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[10px] lg:text-xs font-bold flex-shrink-0">
                           {(user.display_name || 'U')[0].toUpperCase()}
                         </div>
-                        <span className="font-medium text-slate-900 dark:text-white text-xs lg:text-base truncate">
+                        <span className="font-medium text-slate-900 dark:text-white text-xs lg:text-base break-words max-w-[120px] lg:max-w-none">
                           {user.display_name || 'Unnamed User'}
                         </span>
                       </div>

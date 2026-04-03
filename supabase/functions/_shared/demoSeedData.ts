@@ -89,25 +89,65 @@ export const STAFF_NAMES = ['Kemi (Pharmacist)', 'Chucks (Cashier)', 'Hassan (Ma
 
 export function generateSeedData() {
   const products = PRODUCT_TEMPLATES.map((p, index) => {
-    const stock_level = Math.floor(Math.random() * 181) + 20; // 20 to 200
-    const total_units = stock_level + Math.floor(Math.random() * 151) + 50; // stock + 50 to 200
-    const expiry_date = new Date();
-    expiry_date.setMonth(expiry_date.getMonth() + Math.floor(Math.random() * 19) + 6); // 6 to 24 months
+    // Create some low stock items (10% of products)
+    const isLowStock = index % 10 === 0;
+    // Create some expiring items (15% of products)
+    const isExpiringSoon = index % 7 === 0;
+    
+    let stock_level;
+    let total_units;
+    let expiry_date;
+    let months_to_add;
+    let expiryMonthsLeft;
+    
+    if (isLowStock) {
+      // Low stock: 1-9 units
+      stock_level = Math.floor(Math.random() * 9) + 1;
+      total_units = stock_level + Math.floor(Math.random() * 20) + 10;
+    } else {
+      // Normal stock: 20-200 units
+      stock_level = Math.floor(Math.random() * 181) + 20;
+      total_units = stock_level + Math.floor(Math.random() * 151) + 50;
+    }
+    
+    if (isExpiringSoon) {
+      // Expiring soon: 1-3 months
+      expiry_date = new Date();
+      months_to_add = Math.floor(Math.random() * 3) + 1; // 1 to 3 months
+      expiry_date.setMonth(expiry_date.getMonth() + months_to_add);
+      expiryMonthsLeft = months_to_add === 1 ? 'Critical' : 'Expiring Soon';
+    } else {
+      // Normal expiry: 6-24 months
+      expiry_date = new Date();
+      months_to_add = Math.floor(Math.random() * 19) + 6; // 6 to 24 months
+      expiry_date.setMonth(expiry_date.getMonth() + months_to_add);
+      
+      // Calculate expiry months left
+      const now = new Date();
+      const monthsLeft = Math.round((expiry_date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30));
+      expiryMonthsLeft = monthsLeft > 12 ? 'New' : `${monthsLeft} months`;
+    }
+    
+    // Extract generic name from product name (first word or before dosage)
+    const genericName = p.name.split(/\s+\d/)[0].trim();
     
     return {
       id: crypto.randomUUID(),
       tenant_id: DEMO_TENANT_ID,
       branch_id: DEMO_BRANCH_ID,
       name: p.name,
+      generic: genericName,
       category: p.category,
-      price: p.price,
-      cost_price: p.cost,
+      unit: 'units',
+      batch_no: `BN2026-${String(index + 1).padStart(3, '0')}`,
+      expiry_date: expiry_date.toISOString().split('T')[0],
+      expiry_months_left: expiryMonthsLeft,
       stock_level,
       total_units,
-      expiry_date: expiry_date.toISOString().split('T')[0],
-      batch_no: `BN2026-${String(index + 1).padStart(3, '0')}`,
       last_restock_quantity: Math.floor(Math.random() * 151) + 50,
-      last_restock_date: new Date(Date.now() - Math.floor(Math.random() * 30) * 86400000).toISOString(),
+      cost_price: p.cost,
+      price: p.price,
+      image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop',
     };
   });
 
@@ -120,11 +160,9 @@ export function generateSeedData() {
       tenant_id: DEMO_TENANT_ID,
       name,
       phone: `080${Math.floor(10000000 + Math.random() * 90000000)}`,
-      email: `${name.toLowerCase().replace(' ', '.')}@example.com`,
       visits: Math.floor(Math.random() * 15) + 1,
       balance: Math.floor(Math.random() * 5000),
-      insurance_provider: hasInsurance ? INSURANCE_PROVIDERS[Math.floor(Math.random() * INSURANCE_PROVIDERS.length)] : null,
-      insurance_number: hasInsurance ? `INS-${Math.floor(100000 + Math.random() * 900000)}` : null,
+      insurance: hasInsurance ? INSURANCE_PROVIDERS[Math.floor(Math.random() * INSURANCE_PROVIDERS.length)] : 'Uninsured',
       initials,
       created_at: new Date(Date.now() - Math.floor(Math.random() * 180) * 86400000).toISOString(),
     };
@@ -141,7 +179,8 @@ export function generateSeedData() {
     txDate.setHours(8 + Math.floor(Math.random() * 12)); // 8AM to 8PM
     txDate.setMinutes(Math.floor(Math.random() * 60));
 
-    const txnId = `TXN-DEM-${txDate.getTime()}-${Math.floor(Math.random() * 1000)}`;
+    // Shorter transaction ID for better mobile display
+    const txnId = `TXN-${String(i + 1).padStart(4, '0')}`;
     
     const numItems = Math.floor(Math.random() * 4) + 1; // 1 to 4 items
     let totalAmount = 0;
@@ -149,44 +188,44 @@ export function generateSeedData() {
     for (let j = 0; j < numItems; j++) {
       const prod = products[Math.floor(Math.random() * products.length)];
       const qty = Math.floor(Math.random() * 3) + 1; // 1 to 3 qty
-      const subtotal = prod.price * qty;
-      totalAmount += subtotal;
+      const totalPrice = prod.price * qty;
+      totalAmount += totalPrice;
 
       salesItems.push({
         id: crypto.randomUUID(),
         tenant_id: DEMO_TENANT_ID,
-        branch_id: DEMO_BRANCH_ID,
         transaction_id: txnId,
         product_id: prod.id,
-        product_name: prod.name,
         quantity: qty,
         unit_price: prod.price,
-        subtotal: subtotal,
-        created_at: txDate.toISOString()
+        total_price: totalPrice,
       });
     }
 
     const randStatus = Math.random();
-    const status = randStatus > 0.10 ? 'completed' : (randStatus > 0.05 ? 'pending' : 'refunded');
+    const status = randStatus > 0.10 ? 'Completed' : (randStatus > 0.05 ? 'Pending' : 'Refunded');
     
     const randPayment = Math.random();
-    const payment_method = randPayment > 0.40 ? 'cash' : (randPayment > 0.15 ? 'transfer' : 'card');
+    const paymentMethod = randPayment > 0.40 ? 'Cash' : (randPayment > 0.15 ? 'Transfer' : 'Card');
+    
+    const customer = Math.random() > 0.3 ? customers[Math.floor(Math.random() * customers.length)] : null;
 
     transactions.push({
       id: txnId,
       tenant_id: DEMO_TENANT_ID,
       branch_id: DEMO_BRANCH_ID,
+      customer: customer ? customer.name : 'Walk-in Customer',
+      initials: customer ? customer.initials : 'WC',
+      date_time: txDate.toISOString(),
       amount: totalAmount,
       status,
-      payment_method,
+      payment_method: paymentMethod,
       staff_name: STAFF_NAMES[Math.floor(Math.random() * STAFF_NAMES.length)],
-      customer_id: Math.random() > 0.5 ? customers[Math.floor(Math.random() * customers.length)].id : null,
-      created_at: txDate.toISOString()
     });
   }
 
-  // Sort transactions descending
-  transactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  // Sort transactions descending by date_time
+  transactions.sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime());
 
   return { products, customers, transactions, salesItems };
 }

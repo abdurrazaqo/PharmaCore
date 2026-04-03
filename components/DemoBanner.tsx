@@ -16,19 +16,41 @@ export const DemoBanner: React.FC = () => {
     setIsSwitching(true);
     setIsOpen(false);
     try {
+      // First, try the Edge Function approach
       const { data, error } = await supabase.functions.invoke('switch-demo-role', {
          body: { role: targetRole }
       });
-      if (error || data?.error) throw error || new Error(data?.error);
+      
+      console.log('Switch role response:', { data, error });
+      
+      // If Edge Function fails, try direct update (for local development)
+      if (error || data?.error) {
+        console.warn('Edge Function failed, trying direct update...', error || data?.error);
+        
+        // Direct update approach (only works if RLS allows it)
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ role: targetRole })
+          .eq('id', profile?.id);
+        
+        if (updateError) {
+          throw new Error(updateError.message || 'Failed to update role');
+        }
+        
+        console.log('Direct role update successful');
+      } else if (!data?.success) {
+        throw new Error('Role switch failed - no success response');
+      }
       
       await refreshProfile();
       showToast(`Switched to ${targetRole.replace('_', ' ')} view.`, 'success');
       
-      // Delay slightly for context stabilization then reload tree if needed
+      // Delay slightly for context stabilization then reload
       setTimeout(() => window.location.reload(), 500);
     } catch (err: any) {
-      showToast(err.message || 'Failed to switch roles', 'error');
-    } finally {
+      console.error('Switch role catch error:', err);
+      const errorMsg = err.message || err.toString() || 'Failed to switch roles';
+      showToast(`Role switch failed: ${errorMsg}`, 'error');
       setIsSwitching(false);
     }
   };
@@ -41,28 +63,29 @@ export const DemoBanner: React.FC = () => {
   ];
 
   return (
-    <div className="relative w-full bg-[#1a1a2e] text-white px-4 py-2 border-b-2 border-orange-500 flex flex-col lg:flex-row items-center justify-between gap-3 text-sm z-[200]">
-      <div className="flex items-center gap-3 w-full lg:w-auto overflow-hidden">
-        <div className="bg-orange-500/20 border border-orange-500/50 text-orange-400 px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase flex items-center gap-1.5 shrink-0">
-          <span className="material-symbols-outlined text-[14px]">science</span>
-          DEMO MODE
+    <div className="relative w-full bg-[#1a1a2e] text-white px-2 lg:px-4 py-2 border-b-2 border-orange-500 flex flex-col lg:flex-row items-center justify-between gap-2 lg:gap-3 text-sm z-[200]">
+      <div className="flex items-center gap-2 lg:gap-3 w-full lg:w-auto overflow-hidden">
+        <div className="bg-orange-500/20 border border-orange-500/50 text-orange-400 px-2 lg:px-3 py-1 rounded-full text-[10px] lg:text-xs font-black tracking-widest uppercase flex items-center gap-1 lg:gap-1.5 shrink-0">
+          <span className="material-symbols-outlined text-[12px] lg:text-[14px]">science</span>
+          DEMO
         </div>
-        <p className="font-medium text-slate-300 truncate">
-          You are exploring a demo environment. Data resets daily and is not real.
+        <p className="font-medium text-slate-300 truncate text-xs lg:text-sm">
+          Exploring demo environment
         </p>
       </div>
       
-      <div className="flex items-center gap-3 w-full lg:w-auto shrink-0 justify-end">
+      <div className="flex items-center gap-1.5 lg:gap-3 w-full lg:w-auto shrink-0 justify-end">
         
         {/* Role Switcher */}
         <div className="relative">
           <button 
             onClick={() => setIsOpen(!isOpen)} 
             disabled={isSwitching}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-1.5 rounded-lg border border-white/10 font-bold transition-colors disabled:opacity-50"
+            className="flex items-center gap-1 lg:gap-2 bg-white/10 hover:bg-white/20 px-2 lg:px-4 py-1.5 rounded-lg border border-white/10 font-bold transition-colors disabled:opacity-50 text-[10px] lg:text-sm whitespace-nowrap"
           >
-            {isSwitching ? 'Switching...' : 'Try as Different Role'}
-            <span className="material-symbols-outlined text-[16px]">{isOpen ? 'expand_less' : 'expand_more'}</span>
+            <span className="hidden sm:inline">{isSwitching ? 'Switching...' : 'Try as Different Role'}</span>
+            <span className="sm:hidden">{isSwitching ? 'Switching...' : 'Switch Role'}</span>
+            <span className="material-symbols-outlined text-[14px] lg:text-[16px]">{isOpen ? 'expand_less' : 'expand_more'}</span>
           </button>
 
           {isOpen && (
@@ -91,9 +114,11 @@ export const DemoBanner: React.FC = () => {
           href="https://www.365health.online/products/pharmacore#pricing" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black px-5 py-1.5 rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
+          className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black px-3 lg:px-5 py-1.5 rounded-lg flex items-center gap-1 lg:gap-2 hover:opacity-90 transition-opacity text-[10px] lg:text-sm whitespace-nowrap"
         >
-          Get Started <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+          <span className="hidden sm:inline">Get Started</span>
+          <span className="sm:inline lg:hidden">Start</span>
+          <span className="material-symbols-outlined text-[14px] lg:text-[16px]">arrow_forward</span>
         </a>
       </div>
     </div>

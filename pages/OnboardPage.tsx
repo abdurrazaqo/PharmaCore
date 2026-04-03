@@ -102,7 +102,7 @@ export default function OnboardPage() {
           pharmacy_address: formData.pharmacyAddress,
           pharmacy_email: formData.pharmacyEmail,
           pharmacy_phone: formData.pharmacyPhone,
-          pcn_number: formData.pcnNumber || null,
+          pcn_number: formData.pcnNumber,
           contact_person_name: formData.contactName,
           status: 'pending',
           is_beta: formData.isBeta
@@ -228,14 +228,16 @@ export default function OnboardPage() {
                 {error && <p className="text-red-500 text-sm mt-3 font-medium">{error}</p>}
               </div>
 
-              <button 
-                onClick={() => verifyCode(formData.code)}
-                disabled={formData.code.length < 10 || isVerifying}
-                className="w-full max-w-xs bg-[#006C75] text-white py-4 rounded-2xl font-bold shadow-lg shadow-[#006C75]/20 hover:bg-[#005a62] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-              >
-                {isVerifying ? 'Verifying...' : 'Verify Access Code'}
-                {!isVerifying && <span className="material-symbols-outlined">arrow_forward</span>}
-              </button>
+              <div className="flex justify-center">
+                <button 
+                  onClick={() => verifyCode(formData.code)}
+                  disabled={formData.code.length < 10 || isVerifying}
+                  className="w-full max-w-xs bg-[#006C75] text-white py-4 rounded-2xl font-bold shadow-lg shadow-[#006C75]/20 hover:bg-[#005a62] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  {isVerifying ? 'Verifying...' : 'Verify Access Code'}
+                  {!isVerifying && <span className="material-symbols-outlined">arrow_forward</span>}
+                </button>
+              </div>
               
               <p className="mt-8 text-sm text-slate-400">
                 Lost your code? Contact support at <a href="mailto:hello@365health.online" className="text-[#006C75] hover:underline font-medium">hello@365health.online</a>
@@ -303,13 +305,13 @@ export default function OnboardPage() {
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                     PCN Registration Number
-                    <span className="text-slate-400 font-normal">(Optional)</span>
                     <span className="material-symbols-outlined text-slate-300 text-sm cursor-help" title="Your PCN registration number helps us verify your pharmacy faster">info</span>
                   </label>
                   <input 
                     type="text" 
+                    required
                     className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all uppercase"
-                    placeholder="e.g. RUW-12345"
+                    placeholder=""
                     value={formData.pcnNumber}
                     onChange={(e) => setFormData({...formData, pcnNumber: e.target.value})}
                   />

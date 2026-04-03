@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getPlatformMetrics, getOnboardingRequests, PlatformMetrics, OnboardingRequest, generateBetaInvite } from '../../services/superadminService';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../ToastContainer';
 
 const SuperadminOverview: React.FC = () => {
+  const { showToast } = useToast();
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
   const [recentRequests, setRecentRequests] = useState<OnboardingRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,7 +77,7 @@ const SuperadminOverview: React.FC = () => {
               loadData();
             } catch (err) {
               console.error('Failed to generate invite:', err);
-              alert('Failed to generate invite. Please check console for details.');
+              showToast('Failed to generate invite. Please check console for details.', 'error');
             } finally {
               setIsGenerating(false);
             }
@@ -179,7 +181,7 @@ const SuperadminOverview: React.FC = () => {
 
       {/* Generated Link Modal */}
       {generatedLink && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative border border-slate-100 animate-in fade-in zoom-in duration-200">
             <button 
               onClick={() => setGeneratedLink(null)}
@@ -204,7 +206,7 @@ const SuperadminOverview: React.FC = () => {
               <button 
                 onClick={() => {
                   navigator.clipboard.writeText(generatedLink);
-                  alert('Copied to clipboard!');
+                  showToast('Copied to clipboard!', 'success');
                 }}
                 className="w-12 h-12 bg-white border border-slate-200 text-[#006C75] rounded-xl flex items-center justify-center shadow-sm hover:border-[#006C75] hover:bg-teal-50 hover:-translate-y-0.5 transition-all active:scale-95 shrink-0"
                 title="Copy Link"

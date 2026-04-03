@@ -9,13 +9,14 @@ import { useAuth, Permission } from '../contexts/AuthContext';
 import { getCategoryColor } from '../utils/categoryColors';
 import { useTenantGuard } from '../hooks/useTenantGuard';
 import ReadOnlyBadge from './ReadOnlyBadge';
+import { supabase } from '../services/supabaseClient';
 
 const Inventory: React.FC = () => {
   const [filter, setFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [products, setProducts] = useState<Product[]>([]);
   const { showToast } = useToast();
-  const { hasPermission, profile } = useAuth();
+  const { hasPermission, profile, isTenantAdmin, isSuperAdmin } = useAuth();
   const tenantGuard = useTenantGuard();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -26,6 +27,11 @@ const Inventory: React.FC = () => {
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const itemsPerPage = 10;
+
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>(profile?.branch?.id);
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   // Lifted Global State for Selectors
   const [categories, setCategories] = useState<string[]>(() => {
@@ -56,14 +62,26 @@ const Inventory: React.FC = () => {
   }, [units]);
 
   useEffect(() => {
+    if (profile?.tenant?.id && (isTenantAdmin() || isSuperAdmin())) {
+      fetchBranches();
+    }
+  }, [profile?.tenant?.id]);
+
+  useEffect(() => {
     loadProducts();
-  }, []);
+  }, [selectedBranchId]);
+
+  const fetchBranches = async () => {
+    if (!profile?.tenant?.id) return;
+    const { data } = await supabase.from('branches').select('id, name').eq('tenant_id', profile.tenant.id);
+    if (data) setBranches(data);
+  };
 
   const loadProducts = async () => {
     if (!profile?.tenant?.id) return;
     try {
       setLoading(true);
-      const data = await getProducts(profile.tenant.id, profile.branch?.id);
+      const data = await getProducts(profile.tenant.id, selectedBranchId);
       setProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -81,7 +99,7 @@ const Inventory: React.FC = () => {
     }
     
     try {
-      const added = await addProduct(newProduct, profile!.tenant!.id, profile!.branch?.id);
+      const added = await addProduct(newProduct, profile!.tenant!.id, selectedBranchId);
       setProducts([...products, added]);
       showToast('Medicine added successfully!', 'success');
       setIsAddModalOpen(false); // Close modal after success
@@ -104,7 +122,7 @@ const Inventory: React.FC = () => {
     
     setIsDeleting(true);
     try {
-      await deleteProduct(productToDelete, profile!.tenant!.id, profile!.branch?.id);
+      await deleteProduct(productToDelete, profile!.tenant!.id, selectedBranchId);
       setProducts(products.filter(p => p.id !== productToDelete));
       showToast('Medicine deleted successfully!', 'success');
       setProductToDelete(null);
@@ -139,7 +157,7 @@ const Inventory: React.FC = () => {
     }
     
     try {
-      const updated = await updateProduct(id, updates, profile!.tenant!.id, profile!.branch?.id);
+      const updated = await updateProduct(id, updates, profile!.tenant!.id, selectedBranchId);
       setProducts(products.map(p => p.id === id ? updated : p));
       showToast('Medicine updated successfully!', 'success');
     } catch (error) {
@@ -285,22 +303,66 @@ const Inventory: React.FC = () => {
         ))}
       </div>
 
-      {/* Page Title with Export */}
-      <div className="flex items-center justify-between">
+      {/* Page Title with Branch Selector & Export */}
+      <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold dark:text-white">Inventory Management</h2>
           {tenantGuard.isReadOnly && <ReadOnlyBadge />}
         </div>
-        {hasPermission(Permission.INVENTORY_EXPORT) && (
-          <button 
-            onClick={handleExportInventory}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
-            title="Export inventory to CSV"
-          >
-            <span className="material-symbols-outlined text-lg">download</span>
-            Export CSV
-          </button>
-        )}
+        
+        <div className="flex items-center gap-3">
+          {(isTenantAdmin() || isSuperAdmin()) && branches.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setShowBranchDropdown(!showBranchDropdown)}
+                className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-all dark:text-white min-w-[180px] justify-between"
+              >
+                <span>{selectedBranchId ? branches.find(b => b.id === selectedBranchId)?.name : 'All Branches'}</span>
+                <span className="material-symbols-outlined text-[20px] text-slate-400">expand_more</span>
+              </button>
+              
+              {showBranchDropdown && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowBranchDropdown(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl shadow-2xl py-2 overflow-hidden border border-slate-200 dark:border-slate-700 z-20">
+                    <button
+                      onClick={() => { setSelectedBranchId(undefined); setShowBranchDropdown(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold flex justify-between items-center transition-colors ${
+                        !selectedBranchId ? 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <span>All Branches</span>
+                      {!selectedBranchId && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                    </button>
+                    {branches.map((branch) => (
+                      <button
+                        key={branch.id}
+                        onClick={() => { setSelectedBranchId(branch.id); setShowBranchDropdown(false); }}
+                        className={`w-full text-left px-4 py-2.5 text-sm font-bold flex justify-between items-center transition-colors ${
+                          selectedBranchId === branch.id ? 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span>{branch.name}</span>
+                        {selectedBranchId === branch.id && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          
+          {hasPermission(Permission.INVENTORY_EXPORT) && (
+            <button 
+              onClick={handleExportInventory}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
+              title="Export inventory to CSV"
+            >
+              <span className="material-symbols-outlined text-lg">download</span>
+              <span className="hidden lg:inline">Export CSV</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters & Action Bar */}
@@ -313,20 +375,43 @@ const Inventory: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary outline-none min-w-[200px]"
           />
-          <div className="relative group">
-            <select 
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="appearance-none bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-xl pl-4 pr-10 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all dark:text-white hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer min-w-[160px]"
+          <div className="relative">
+            <button
+              onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+              className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-all dark:text-white min-w-[160px] justify-between"
             >
-              <option value="All">Category: All</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors text-[20px]">
-              expand_more
-            </span>
+              <span>{categoryFilter === 'All' ? 'Category: All' : categoryFilter}</span>
+              <span className="material-symbols-outlined text-[20px] text-slate-400">expand_more</span>
+            </button>
+            
+            {showCategoryDropdown && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowCategoryDropdown(false)} />
+                <div className="absolute left-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl shadow-2xl py-2 overflow-hidden border border-slate-200 dark:border-slate-700 z-20 max-h-80 overflow-y-auto">
+                  <button
+                    onClick={() => { setCategoryFilter('All'); setShowCategoryDropdown(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-bold flex justify-between items-center transition-colors ${
+                      categoryFilter === 'All' ? 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <span>All Categories</span>
+                    {categoryFilter === 'All' && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                  </button>
+                  {categories.map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => { setCategoryFilter(category); setShowCategoryDropdown(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold flex justify-between items-center transition-colors ${
+                        categoryFilter === category ? 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <span>{category}</span>
+                      {categoryFilter === category && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
             {['All', 'Low Stock', 'Out of Stock', 'Near Expiry'].map((tab) => (
