@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getOnboardingRequests, OnboardingRequest } from '../../services/superadminService';
 import { supabase } from '../../services/supabaseClient';
 import { formatDistanceToNow } from 'date-fns';
@@ -46,8 +47,14 @@ const SuperadminPending: React.FC = () => {
     if (!selectedRequest) return;
     setIsProcessing(selectedRequest.id);
     try {
+      // Get the current session to pass auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.functions.invoke('approve-onboarding', {
-        body: { request_id: selectedRequest.id }
+        body: { request_id: selectedRequest.id },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`
+        }
       });
 
       if (error || !data.success) throw new Error(data?.error || "Approval failed");
@@ -66,8 +73,14 @@ const SuperadminPending: React.FC = () => {
     if (!selectedRequest || !rejectionReason.trim()) return;
     setIsProcessing(selectedRequest.id);
     try {
+      // Get the current session to pass auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.functions.invoke('reject-onboarding', {
-        body: { request_id: selectedRequest.id, rejection_reason: rejectionReason }
+        body: { request_id: selectedRequest.id, rejection_reason: rejectionReason },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`
+        }
       });
 
       if (error || !data.success) throw new Error(data?.error || "Rejection failed");
@@ -236,7 +249,7 @@ const SuperadminPending: React.FC = () => {
       )}
 
       {/* Approve Modal */}
-      {modalType === 'approve' && selectedRequest && (
+      {modalType === 'approve' && selectedRequest && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl p-8 animate-in fade-in zoom-in duration-300">
             <h3 className="text-2xl font-black text-slate-800 mb-2">Confirm Approval</h3>
@@ -272,7 +285,7 @@ const SuperadminPending: React.FC = () => {
       )}
 
       {/* Reject Modal */}
-      {modalType === 'reject' && selectedRequest && (
+      {modalType === 'reject' && selectedRequest && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl p-8">
             <h3 className="text-2xl font-black text-slate-800 mb-2">Reject Application</h3>
@@ -303,7 +316,8 @@ const SuperadminPending: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
