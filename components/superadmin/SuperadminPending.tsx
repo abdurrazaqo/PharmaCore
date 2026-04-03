@@ -237,7 +237,7 @@ const SuperadminPending: React.FC = () => {
 
       {/* Approve Modal */}
       {modalType === 'approve' && selectedRequest && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl p-8 animate-in fade-in zoom-in duration-300">
             <h3 className="text-2xl font-black text-slate-800 mb-2">Confirm Approval</h3>
             <p className="text-slate-500 mb-8 leading-relaxed">
@@ -273,7 +273,7 @@ const SuperadminPending: React.FC = () => {
 
       {/* Reject Modal */}
       {modalType === 'reject' && selectedRequest && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl p-8">
             <h3 className="text-2xl font-black text-slate-800 mb-2">Reject Application</h3>
             <p className="text-slate-500 mb-6">Tell the pharmacy why their application was rejected. This is required.</p>

@@ -78,7 +78,7 @@ const SuperadminAuditLogs: React.FC = () => {
 
       {/* Detail Modal */}
       {selectedLog && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-2 lg:p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-2 lg:p-4">
           <div className="bg-white rounded-2xl lg:rounded-[32px] w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] lg:max-h-[90vh]">
             <header className="p-4 lg:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                <div className="flex-1 min-w-0">

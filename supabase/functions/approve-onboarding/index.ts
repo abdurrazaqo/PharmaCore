@@ -65,7 +65,6 @@ serve(async (req) => {
         pcn_number: request.pcn_number,
         trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         approved_at: new Date().toISOString(),
-        approved_by: user.id,
         is_gifted: isBeta,
         gifted_until: giftedUntil
       }])

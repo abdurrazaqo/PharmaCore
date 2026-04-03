@@ -261,7 +261,7 @@ const SuperadminPharmacies: React.FC = () => {
 
       {/* Modals */}
       {actionModal === 'suspend' && selectedTenant && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 lg:p-8 animate-in fade-in zoom-in duration-300">
             <h3 className="text-xl lg:text-2xl font-black text-slate-800 mb-2">Suspend Service</h3>
             <p className="text-slate-500 mb-6">Enter the reason for suspension. This will be shown to the pharmacy users.</p>
@@ -287,7 +287,7 @@ const SuperadminPharmacies: React.FC = () => {
       )}
 
       {actionModal === 'notify' && selectedTenant && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 lg:p-8 animate-in fade-in zoom-in duration-300">
             <h3 className="text-xl lg:text-2xl font-black text-slate-800 mb-2">Send Notification</h3>
             <p className="text-slate-500 mb-6 font-medium">Manually send an official billing lifecycle email to <strong>{selectedTenant.pharmacy_email}</strong>.</p>
@@ -350,7 +350,7 @@ const SuperadminPharmacies: React.FC = () => {
       )}
 
       {actionModal === 'plan' && selectedTenant && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 lg:p-8 animate-in fade-in zoom-in duration-300">
             <h3 className="text-xl lg:text-2xl font-black text-slate-800 mb-6 flex items-center gap-3">
                <span className="material-symbols-outlined text-3xl text-[#006C75]">loyalty</span>
@@ -387,7 +387,7 @@ const SuperadminPharmacies: React.FC = () => {
       )}
 
       {actionModal === 'extend' && selectedTenant && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 lg:p-8 animate-in fade-in zoom-in duration-300">
             <h3 className="text-xl lg:text-2xl font-black text-slate-800 mb-6 flex items-center gap-3">
                <span className="material-symbols-outlined text-3xl text-indigo-600">more_time</span>
@@ -419,7 +419,7 @@ const SuperadminPharmacies: React.FC = () => {
       )}
 
       {actionModal === 'delete' && selectedTenant && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 lg:p-8 animate-in fade-in zoom-in duration-300">
             <h3 className="text-xl lg:text-2xl font-black text-red-600 mb-2">Delete Pharmacy?</h3>
             <p className="text-slate-500 mb-8 leading-relaxed text-sm lg:text-base">
@@ -449,7 +449,7 @@ const SuperadminPharmacies: React.FC = () => {
 
       {/* Detail Slide-over */}
       {actionModal === 'details' && selectedTenant && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex justify-end">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex justify-end">
           <div className="w-full max-w-xl bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col">
              <header className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
                 <div className="flex items-center gap-4">
