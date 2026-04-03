@@ -142,7 +142,7 @@ const SuperadminLayout: React.FC = () => {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
+      <main className="flex-1 flex flex-col relative">
         <header className="hidden lg:flex h-20 bg-white border-b border-slate-200 px-8 items-center justify-between z-10">
           <div className="flex items-center gap-4">
             <h2 className="font-bold text-slate-800 text-lg uppercase tracking-widest">
