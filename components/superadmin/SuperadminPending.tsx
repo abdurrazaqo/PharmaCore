@@ -281,7 +281,8 @@ const SuperadminPending: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Reject Modal */}
