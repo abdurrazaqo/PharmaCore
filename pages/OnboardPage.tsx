@@ -71,6 +71,11 @@ export default function OnboardPage() {
         throw new Error(data?.error || "Invalid access code");
       }
 
+      console.log('=== VALIDATION RESPONSE ===');
+      console.log('Full response:', data);
+      console.log('Code from response:', data.code);
+      console.log('Token from response:', data.token);
+
       setFormData(prev => ({
         ...prev,
         token: data.token || value, // Store the full token UUID
@@ -93,6 +98,11 @@ export default function OnboardPage() {
     setIsLoading(true);
     setError(null);
     try {
+      console.log('=== SUBMITTING ONBOARDING ===');
+      console.log('formData.code:', formData.code);
+      console.log('formData.token:', formData.token);
+      console.log('Using access_code:', formData.code);
+      
       // Insert into onboarding_requests
       const { error: insertError } = await supabase
         .from('onboarding_requests')
@@ -108,7 +118,11 @@ export default function OnboardPage() {
           is_beta: formData.isBeta
         }]);
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.log('=== INSERT ERROR ===');
+        console.log('Error:', insertError);
+        throw insertError;
+      }
 
       navigate('/onboard/pending', { state: { email: formData.pharmacyEmail } });
     } catch (err: any) {
