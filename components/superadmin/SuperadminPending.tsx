@@ -47,17 +47,31 @@ const SuperadminPending: React.FC = () => {
     if (!selectedRequest) return;
     setIsProcessing(selectedRequest.id);
     try {
-      // Get the current session to pass auth token
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Starting approval for request:', selectedRequest.id);
       
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', session ? 'exists' : 'missing');
+      
+      if (!session) {
+        throw new Error("You are not logged in. Please refresh and try again.");
+      }
+      
+      console.log('Calling approve-onboarding Edge Function...');
       const { data, error } = await supabase.functions.invoke('approve-onboarding', {
-        body: { request_id: selectedRequest.id },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`
-        }
+        body: { request_id: selectedRequest.id }
       });
 
-      if (error || !data.success) throw new Error(data?.error || "Approval failed");
+      console.log('Edge Function response:', { data, error });
+
+      if (error) {
+        console.error('Edge Function error:', error);
+        throw new Error(error.message || "Approval failed");
+      }
+      
+      if (!data || !data.success) {
+        throw new Error(data?.error || "Approval failed");
+      }
       
       setRequests(prev => prev.filter(r => r.id !== selectedRequest.id));
       setModalType(null);
@@ -73,17 +87,18 @@ const SuperadminPending: React.FC = () => {
     if (!selectedRequest || !rejectionReason.trim()) return;
     setIsProcessing(selectedRequest.id);
     try {
-      // Get the current session to pass auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      
       const { data, error } = await supabase.functions.invoke('reject-onboarding', {
-        body: { request_id: selectedRequest.id, rejection_reason: rejectionReason },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`
-        }
+        body: { request_id: selectedRequest.id, rejection_reason: rejectionReason }
       });
 
-      if (error || !data.success) throw new Error(data?.error || "Rejection failed");
+      if (error) {
+        console.error('Edge Function error:', error);
+        throw new Error(error.message || "Rejection failed");
+      }
+      
+      if (!data.success) {
+        throw new Error(data?.error || "Rejection failed");
+      }
 
       setRequests(prev => prev.filter(r => r.id !== selectedRequest.id));
       setModalType(null);
