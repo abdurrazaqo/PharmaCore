@@ -5,3 +5,15 @@ verify_jwt = false
 
 [functions.reject-onboarding]
 verify_jwt = false
+
+[functions.validate-setup-token]
+verify_jwt = false
+
+[functions.complete-setup]
+verify_jwt = false
+
+[functions.validate-access-token]
+verify_jwt = false
+
+[functions.generate-access-token]
+verify_jwt = false
