@@ -66,7 +66,13 @@ serve(async (req) => {
       console.error('User record insertion failed:', userInsertError)
       // Cleanup auth user to allow retry
       await supabaseAdmin.auth.admin.deleteUser(userId)
-      throw new Error("Failed to create user profile")
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: `User profile creation failed: ${userInsertError.message}`,
+        details: userInsertError
+      }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
     // 4. Update Tenant
@@ -84,13 +90,33 @@ serve(async (req) => {
       })
       .eq('id', request.tenant_id)
 
-    if (tenantUpdateError) throw tenantUpdateError
+    if (tenantUpdateError) {
+      console.error('Tenant update failed:', tenantUpdateError)
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: `Tenant record update failed: ${tenantUpdateError.message}`,
+        details: tenantUpdateError
+      }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     // 5. Mark onboarding request as completed
-    await supabaseAdmin
+    const { error: requestUpdateError } = await supabaseAdmin
       .from('onboarding_requests')
       .update({ setup_token_used_at: new Date().toISOString() })
       .eq('id', request.id)
+
+    if (requestUpdateError) {
+      console.error('Onboarding request update failed:', requestUpdateError)
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: `Request update failed: ${requestUpdateError.message}`,
+        details: requestUpdateError 
+      }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     // 6. Send Welcome Email
     if (resendApiKey) {

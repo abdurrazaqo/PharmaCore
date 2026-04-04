@@ -135,7 +135,8 @@ export default function SetupPage() {
       });
 
       if (functionError || !data.success) {
-        throw new Error(data?.error || "Setup failed");
+        const detailMsg = data?.error || functionError?.message || "Setup failed";
+        throw new Error(detailMsg);
       }
 
       // Success!

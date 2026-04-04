@@ -201,13 +201,15 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
     try {
       if (!profile?.tenant?.id) throw new Error('Tenant ID missing');
 
-      const { error } = await supabase
-        .from('tenants')
-        .update({ onboarding_completed: true })
-        .eq('id', profile.tenant.id);
+      const { data, error: functionError } = await supabase.functions.invoke('finalize-onboarding');
 
-      if (error) throw error;
+      if (functionError || !data?.success) {
+        const errorDetail = data?.error || functionError?.message || 'Failed to finalize setup.';
+        console.error('Finalization failure:', { data, functionError });
+        throw new Error(errorDetail);
+      }
       
+      console.log('Finalization success:', data);
       onComplete(); // Triggers a profile refresh and unmounts the wizard
     } catch (err: any) {
       setError(err.message || 'Failed to finalize setup.');
