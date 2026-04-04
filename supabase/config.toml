@@ -1,0 +1,7 @@
+project_id = "hmjclidojxubpvgsiegu"
+
+[functions.approve-onboarding]
+verify_jwt = false
+
+[functions.reject-onboarding]
+verify_jwt = false
