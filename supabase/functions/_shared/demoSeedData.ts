@@ -171,57 +171,62 @@ export function generateSeedData() {
   const transactions = [];
   const salesItems = [];
 
-  // Generate 100 transactions over the last 30 days
-  for (let i = 0; i < 100; i++) {
-    const dateOffset = Math.floor(Math.random() * 30); // 0 to 30 days ago
-    const txDate = new Date();
-    txDate.setDate(txDate.getDate() - dateOffset);
-    txDate.setHours(8 + Math.floor(Math.random() * 12)); // 8AM to 8PM
-    txDate.setMinutes(Math.floor(Math.random() * 60));
+  // Generate transactions over the last 30 days
+  let txCount = 0;
+  for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
+    // More transactions for "today" and recent days
+    let transactionsPerDay;
+    if (dayOffset === 0) transactionsPerDay = Math.floor(Math.random() * 6) + 8; // 8-13 for today
+    else if (dayOffset < 7) transactionsPerDay = Math.floor(Math.random() * 5) + 4; // 4-8 for this week
+    else transactionsPerDay = Math.floor(Math.random() * 3) + 1; // 1-3 for older days
 
-    // Shorter transaction ID for better mobile display
-    const txnId = `TXN-${String(i + 1).padStart(4, '0')}`;
-    
-    const numItems = Math.floor(Math.random() * 4) + 1; // 1 to 4 items
-    let totalAmount = 0;
-    
-    for (let j = 0; j < numItems; j++) {
-      const prod = products[Math.floor(Math.random() * products.length)];
-      const qty = Math.floor(Math.random() * 3) + 1; // 1 to 3 qty
-      const totalPrice = prod.price * qty;
-      totalAmount += totalPrice;
+    for (let j = 0; j < transactionsPerDay; j++) {
+      txCount++;
+      const txDate = new Date();
+      txDate.setDate(txDate.getDate() - dayOffset);
+      txDate.setHours(8 + Math.floor(Math.random() * 12)); // 8AM to 8PM
+      txDate.setMinutes(Math.floor(Math.random() * 60));
 
-      salesItems.push({
-        id: crypto.randomUUID(),
+      const txnId = `TXN-${String(txCount).padStart(4, '0')}`;
+      const numItems = Math.floor(Math.random() * 4) + 1;
+      let totalAmount = 0;
+      
+      for (let k = 0; k < numItems; k++) {
+        const prod = products[Math.floor(Math.random() * products.length)];
+        const qty = Math.floor(Math.random() * 3) + 1;
+        const totalPrice = prod.price * qty;
+        totalAmount += totalPrice;
+
+        salesItems.push({
+          id: crypto.randomUUID(),
+          tenant_id: DEMO_TENANT_ID,
+          transaction_id: txnId,
+          product_id: prod.id,
+          quantity: qty,
+          unit_price: prod.price,
+          total_price: totalPrice,
+        });
+      }
+
+      const randStatus = Math.random();
+      const status = randStatus > 0.10 ? 'Completed' : (randStatus > 0.05 ? 'Pending' : 'Refunded');
+      const randPayment = Math.random();
+      const paymentMethod = randPayment > 0.40 ? 'Cash' : (randPayment > 0.15 ? 'Transfer' : 'Card');
+      const customer = Math.random() > 0.3 ? customers[Math.floor(Math.random() * customers.length)] : null;
+
+      transactions.push({
+        id: txnId,
         tenant_id: DEMO_TENANT_ID,
-        transaction_id: txnId,
-        product_id: prod.id,
-        quantity: qty,
-        unit_price: prod.price,
-        total_price: totalPrice,
+        branch_id: DEMO_BRANCH_ID,
+        customer: customer ? customer.name : 'Walk-in Customer',
+        initials: customer ? customer.initials : 'WC',
+        date_time: txDate.toISOString(),
+        amount: totalAmount,
+        status,
+        payment_method: paymentMethod,
+        staff_name: STAFF_NAMES[Math.floor(Math.random() * STAFF_NAMES.length)],
       });
     }
-
-    const randStatus = Math.random();
-    const status = randStatus > 0.10 ? 'Completed' : (randStatus > 0.05 ? 'Pending' : 'Refunded');
-    
-    const randPayment = Math.random();
-    const paymentMethod = randPayment > 0.40 ? 'Cash' : (randPayment > 0.15 ? 'Transfer' : 'Card');
-    
-    const customer = Math.random() > 0.3 ? customers[Math.floor(Math.random() * customers.length)] : null;
-
-    transactions.push({
-      id: txnId,
-      tenant_id: DEMO_TENANT_ID,
-      branch_id: DEMO_BRANCH_ID,
-      customer: customer ? customer.name : 'Walk-in Customer',
-      initials: customer ? customer.initials : 'WC',
-      date_time: txDate.toISOString(),
-      amount: totalAmount,
-      status,
-      payment_method: paymentMethod,
-      staff_name: STAFF_NAMES[Math.floor(Math.random() * STAFF_NAMES.length)],
-    });
   }
 
   // Sort transactions descending by date_time

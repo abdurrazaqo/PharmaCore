@@ -446,9 +446,9 @@ const Inventory: React.FC = () => {
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                 <th className="px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Product Item</th>
                 <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 hidden lg:table-cell">Category</th>
-                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 text-center">Stock Level</th>
-                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Pricing</th>
-                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Batch & Expiry</th>
+                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 text-center">Stock</th>
+                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 hidden sm:table-cell">Pricing</th>
+                <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 hidden lg:table-cell">Batch & Expiry</th>
                 <th className="px-1 md:px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 text-right">Actions</th>
               </tr>
             </thead>
@@ -476,8 +476,12 @@ const Inventory: React.FC = () => {
                         <>{prod.name} {prod.strength ? <span className="opacity-80 font-medium">- {prod.strength}</span> : ''}</>
                       )}
                     </p>
-                    <p className="text-[10px] text-slate-500 font-medium mt-0.5 leading-tight">
-                      {prod.name} {prod.dosageForm ? <span className="text-slate-400 dark:text-slate-500">• {prod.dosageForm}</span> : ''}
+                    <p className="text-[10px] text-slate-500 font-medium mt-0.5 leading-tight flex flex-wrap items-center gap-x-1">
+                      <span>{prod.name}</span> 
+                      {prod.dosageForm && <span className="text-slate-400 dark:text-slate-500">• {prod.dosageForm}</span>}
+                      <span className="sm:hidden font-bold text-emerald-600 dark:text-emerald-400 ml-auto leading-none">
+                        ₦{prod.price?.toLocaleString('en-NG', { maximumFractionDigits: 0 }) || '0'}
+                      </span>
                     </p>
                   </td>
                   <td className="px-1 md:px-2 py-2 hidden lg:table-cell">
@@ -486,11 +490,11 @@ const Inventory: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-1 md:px-2 py-2 text-center">
-                    <div className="flex flex-col items-center justify-center gap-1">
-                      <span className={`text-xs font-bold whitespace-nowrap ${((prod.totalUnits / prod.lastRestockQuantity) * 100) <= 25 ? 'text-amber-600' : 'text-slate-700 dark:text-slate-300'}`}>
-                        {prod.totalUnits} <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 hidden xl:inline">{prod.unit || 'Unit'}</span>
+                    <div className="flex flex-col items-center justify-center gap-0.5">
+                      <span className={`text-[11px] font-bold whitespace-nowrap ${((prod.totalUnits / prod.lastRestockQuantity) * 100) <= 25 ? 'text-amber-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                        {prod.totalUnits} <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400 hidden xl:inline">{prod.unit || 'Unit'}</span>
                       </span>
-                      <div className="hidden lg:block w-full max-w-[80px] h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="hidden lg:block w-full max-w-[60px] h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-0.5">
                         <div 
                           className={`h-full rounded-full ${((prod.totalUnits / prod.lastRestockQuantity) * 100) <= 25 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
                           style={{ width: `${Math.min(100, (prod.totalUnits / prod.lastRestockQuantity) * 100)}%` }}
@@ -498,12 +502,12 @@ const Inventory: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-1 md:px-2 py-2">
-                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                  <td className="px-1 md:px-2 py-2 hidden sm:table-cell">
+                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
                       ₦{prod.price?.toLocaleString('en-NG', { maximumFractionDigits: 0 }) || '0'}
                     </span>
                   </td>
-                  <td className="px-1 md:px-2 py-2">
+                  <td className="px-1 md:px-2 py-2 hidden lg:table-cell">
                     <div className="flex flex-col">
                       <span className={`text-xs font-medium leading-tight ${prod.expiryMonthsLeft === 'EXPIRED' ? 'text-rose-600 font-bold' : 'text-slate-700 dark:text-slate-300'}`}>
                         {prod.expiryDate && !isNaN(new Date(prod.expiryDate).getTime()) ? new Date(prod.expiryDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : prod.expiryDate}
@@ -513,28 +517,32 @@ const Inventory: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-1 md:px-2 py-2 text-right">
-                    <div className="flex justify-end gap-1">
-                      {hasPermission(Permission.INVENTORY_EDIT) && !tenantGuard.isReadOnly && (
-                        <button 
-                          onClick={() => handleEditProduct(prod)}
-                          className="p-1 text-slate-400 hover:text-primary transition-colors"
-                          title="Edit Medicine"
-                        >
-                          <span className="material-symbols-outlined text-base">edit</span>
-                        </button>
-                      )}
-                      {hasPermission(Permission.INVENTORY_DELETE) && !tenantGuard.isReadOnly && (
-                        <button 
-                          onClick={() => requestDeleteProduct(prod.id)}
-                          className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
-                          title="Delete Medicine"
-                        >
-                          <span className="material-symbols-outlined text-base">delete</span>
-                        </button>
-                      )}
-                      {(!hasPermission(Permission.INVENTORY_EDIT) && !hasPermission(Permission.INVENTORY_DELETE) || tenantGuard.isReadOnly) && (
-                        <span className="text-xs text-slate-400 italic px-2">View Only</span>
-                      )}
+                    <div className="relative group/menu inline-block">
+                      <button className="p-2 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-400 hover:text-primary shadow-sm hover:shadow-md">
+                        <span className="material-symbols-outlined text-xl">more_vert</span>
+                      </button>
+                      <div className="absolute right-0 top-full pt-1 invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all z-[30]">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-1.5 w-48 overflow-hidden">
+                          {hasPermission(Permission.INVENTORY_EDIT) && !tenantGuard.isReadOnly ? (
+                            <button 
+                              onClick={() => handleEditProduct(prod)}
+                              className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-lg opacity-60">edit</span> Edit Medicine
+                            </button>
+                          ) : (
+                            <div className="px-4 py-2 text-xs text-slate-400 italic">Read-only access</div>
+                          )}
+                          {hasPermission(Permission.INVENTORY_DELETE) && !tenantGuard.isReadOnly && (
+                            <button 
+                              onClick={() => requestDeleteProduct(prod.id)}
+                              className="w-full text-left px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 flex items-center gap-3 transition-colors border-t border-slate-50 dark:border-slate-700 mt-1"
+                            >
+                              <span className="material-symbols-outlined text-lg">delete</span> Delete Medicine
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </td>
                 </tr>

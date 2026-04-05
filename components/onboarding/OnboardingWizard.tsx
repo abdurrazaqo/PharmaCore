@@ -210,7 +210,10 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
       }
       
       console.log('Finalization success:', data);
-      onComplete(); // Triggers a profile refresh and unmounts the wizard
+      
+      // Force a cache-busted reload to ensure the profile refetch gets the latest DB state
+      const separator = window.location.href.includes('?') ? '&' : '?';
+      window.location.href = window.location.origin + '/dashboard' + separator + 'v=' + Date.now();
     } catch (err: any) {
       setError(err.message || 'Failed to finalize setup.');
       setIsSaving(false);
@@ -231,14 +234,14 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
   return (
     <div className="fixed inset-0 bg-slate-50 z-[100] flex flex-col font-inter overflow-y-auto">
       {/* Wizard Header / Progress */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10 px-6 py-4">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 py-3 sm:px-6 sm:py-4">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
           <Logo size="sm" />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {[1, 2, 3, 4, 5].map(step => (
               <div key={step} className="flex items-center">
                 <div className={`w-2.5 h-2.5 rounded-full transition-colors ${currentStep === step ? 'bg-[#006C75] scale-125' : currentStep > step ? 'bg-[#006C75]/50' : 'bg-slate-200'}`} />
-                {step < 5 && <div className={`w-8 h-px mx-1 transition-colors ${currentStep > step ? 'bg-[#006C75]/50' : 'bg-slate-200'}`} />}
+                {step < 5 && <div className={`w-4 sm:w-8 h-px mx-0.5 sm:mx-1 transition-colors ${currentStep > step ? 'bg-[#006C75]/50' : 'bg-slate-200'}`} />}
               </div>
             ))}
           </div>
@@ -262,7 +265,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
               <span className="material-symbols-outlined text-blue-500 mt-1">info</span>
               <div>
                 <h4 className="font-bold text-blue-900 mb-1">Your Subscription</h4>
-                <p className="text-blue-800 text-sm">You're on the <strong>{profile?.tenant?.plan?.toUpperCase()}</strong> plan with 30 days free trial ending <strong>{new Date(profile?.tenant?.trial_ends_at || Date.now()).toLocaleDateString()}</strong>.</p>
+                <p className="text-blue-800 text-sm">You're on the <strong>{profile?.tenant?.plan?.toUpperCase()}</strong> plan with 30 days free trial ending <strong>{new Date(profile?.tenant?.trial_ends_at || Date.now()).toLocaleDateString('en-GB')}</strong>.</p>
               </div>
             </div>
             <button
@@ -276,7 +279,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
         {/* Step 2: Pharmacy Profile */}
         {currentStep === 2 && (
-          <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-12 animate-in slide-in-from-right-8 duration-300 fade-in">
+          <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 md:p-12 animate-in slide-in-from-right-8 duration-300 fade-in">
             <div className="mb-8 select-none">
               <h2 className="text-3xl font-bold text-slate-900 mb-2">Complete your pharmacy profile</h2>
               <p className="text-slate-500">Ensure your contact details and branding are correct. This will be visible on your receipts.</p>
@@ -286,23 +289,23 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Pharmacy Name *</label>
-                  <input required type="text" value={formData.pharmacyName} onChange={e => setFormData({...formData, pharmacyName: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all" />
+                  <input required type="text" value={formData.pharmacyName} onChange={e => setFormData({...formData, pharmacyName: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Contact Email *</label>
-                  <input required type="email" value={formData.pharmacyEmail} onChange={e => setFormData({...formData, pharmacyEmail: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all" />
+                  <input required type="email" value={formData.pharmacyEmail} onChange={e => setFormData({...formData, pharmacyEmail: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Phone Number *</label>
-                  <input required type="tel" value={formData.pharmacyPhone} onChange={e => setFormData({...formData, pharmacyPhone: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all" />
+                  <input required type="tel" value={formData.pharmacyPhone} onChange={e => setFormData({...formData, pharmacyPhone: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Physical Address *</label>
-                  <input required type="text" value={formData.pharmacyAddress} onChange={e => setFormData({...formData, pharmacyAddress: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all" />
+                  <input required type="text" value={formData.pharmacyAddress} onChange={e => setFormData({...formData, pharmacyAddress: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">PCN Number <span className="text-slate-400 font-normal">(Optional)</span></label>
-                  <input type="text" value={formData.pcnNumber} onChange={e => setFormData({...formData, pcnNumber: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all" placeholder="e.g. PCN-123456" />
+                  <input type="text" value={formData.pcnNumber} onChange={e => setFormData({...formData, pcnNumber: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white" placeholder="e.g. PCN-123456" />
                 </div>
               </div>
 
@@ -360,7 +363,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
         {/* Step 3: Set Up First Branch */}
         {currentStep === 3 && (
-          <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-12 animate-in slide-in-from-right-8 duration-300 fade-in">
+          <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 md:p-12 animate-in slide-in-from-right-8 duration-300 fade-in">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-slate-900 mb-2">Set up your first branch</h2>
               <p className="text-slate-500">A branch represents a physical pharmacy location. All sales and inventory are linked to a specific branch.</p>
@@ -369,11 +372,11 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
             <form onSubmit={handleStep3Submit} className="space-y-6">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Branch Name *</label>
-                <input required type="text" value={formData.branchName} onChange={e => setFormData({...formData, branchName: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all" placeholder="e.g. Main Branch, Ikeja Branch" />
+                <input required type="text" value={formData.branchName} onChange={e => setFormData({...formData, branchName: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white" placeholder="e.g. Main Branch, Ikeja Branch" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Branch Location Address <span className="text-slate-400 font-normal">(Optional)</span></label>
-                <input type="text" value={formData.branchLocation} onChange={e => setFormData({...formData, branchLocation: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all" placeholder="Where is this branch located?" />
+                <input type="text" value={formData.branchLocation} onChange={e => setFormData({...formData, branchLocation: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white" placeholder="Where is this branch located?" />
               </div>
               
               {profile?.tenant?.plan === 'basic' ? (
@@ -401,7 +404,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
         {/* Step 4: Add First Staff User */}
         {currentStep === 4 && (
-          <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-12 animate-in slide-in-from-right-8 duration-300 fade-in">
+          <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 md:p-12 animate-in slide-in-from-right-8 duration-300 fade-in">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-slate-900 mb-2">Add your first team member</h2>
               <p className="text-slate-500">You can safely skip this step and add users later from the User Management section.</p>
@@ -418,19 +421,19 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
               <form onSubmit={handleStep4Submit} className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
-                  <input required type="text" value={formData.staffName} onChange={e => setFormData({...formData, staffName: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all" />
+                  <input required type="text" value={formData.staffName} onChange={e => setFormData({...formData, staffName: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                  <input required type="email" value={formData.staffEmail} onChange={e => setFormData({...formData, staffEmail: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all" />
+                  <input required type="email" value={formData.staffEmail} onChange={e => setFormData({...formData, staffEmail: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Temporary Password</label>
-                  <input required type="password" value={formData.staffPassword} onChange={e => setFormData({...formData, staffPassword: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all" minLength={6} placeholder="Min 6 characters" />
+                  <input required type="password" value={formData.staffPassword} onChange={e => setFormData({...formData, staffPassword: e.target.value})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white" minLength={6} placeholder="Min 6 characters" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Role</label>
-                  <select required value={formData.staffRole} onChange={e => setFormData({...formData, staffRole: e.target.value as UserRole})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all bg-white capitalize">
+                  <select required value={formData.staffRole} onChange={e => setFormData({...formData, staffRole: e.target.value as UserRole})} className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all bg-white text-slate-900 capitalize">
                     {[UserRole.BRANCH_ADMIN, UserRole.PHARMACIST, UserRole.PHARMACY_TECHNICIAN, UserRole.CASHIER].map(role => (
                       <option key={role} value={role}>{role.replace('_', ' ')}</option>
                     ))}
@@ -493,7 +496,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-left hover:border-slate-300 transition-colors cursor-default">
                 <span className="material-symbols-outlined text-[#006C75] mb-2 block">inventory_2</span>
                 <p className="text-sm font-bold text-slate-800">Add Inventory</p>

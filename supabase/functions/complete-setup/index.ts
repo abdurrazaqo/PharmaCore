@@ -136,7 +136,7 @@ serve(async (req) => {
                 <h1 style="color: #006C75;">Welcome aboard, ${admin_name}!</h1>
                 <p>Your setup for <strong>${pharmacy_name}</strong> is complete. You now have full access to your PharmaCore dashboard.</p>
                 <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <p><strong>Your Trial Period:</strong> 30 Days (Expires ${new Date(trialEndsAt).toLocaleDateString()})</p>
+                  <p><strong>Your Trial Period:</strong> 30 Days (Expires ${new Date(trialEndsAt).toLocaleDateString('en-GB')})</p>
                   <p><strong>Login URL:</strong> <a href="https://pharmacore.365health.online/login">pharmacore.365health.online/login</a></p>
                 </div>
                 <p>Need help getting started? Reply to this email or visit our help center.</p>

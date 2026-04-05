@@ -274,7 +274,6 @@ const Customers: React.FC = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
-                <th className="px-3 py-2">ID</th>
                 <th className="px-3 py-2">Patient Name</th>
                 <th className="px-3 py-2 hidden md:table-cell">Contact</th>
                 <th className="px-2 py-2 text-center hidden lg:table-cell">Visits</th>
@@ -299,14 +298,14 @@ const Customers: React.FC = () => {
               ) : (
                 paginatedCustomers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
-                  <td className="px-3 py-2 text-xs font-mono text-slate-400">{customer.id}</td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <div className="hidden lg:flex size-8 rounded-full bg-primary/10 text-primary items-center justify-center text-[10px] font-bold shrink-0">
+                      <div className="hidden sm:flex size-8 rounded-full bg-primary/10 text-primary items-center justify-center text-[10px] font-bold shrink-0">
                         {customer.initials}
                       </div>
                       <div className="flex flex-col leading-tight">
                         <span className="text-xs font-semibold dark:text-white">{customer.name}</span>
+                        <span className="text-[10px] text-slate-400 font-mono sm:hidden">{customer.id.slice(0, 8)}...</span>
                       </div>
                     </div>
                   </td>
@@ -330,32 +329,42 @@ const Customers: React.FC = () => {
                     </button>
                   </td>
                   <td className="px-2 py-2 text-right">
-                    <div className="flex justify-end gap-1">
-                      <button 
-                        onClick={() => handleViewHistory(customer)}
-                        className="p-1 text-slate-400 hover:text-primary transition-colors"
-                        title="View History"
-                      >
-                        <span className="material-symbols-outlined text-base">history</span>
+                    <div className="relative group/menu inline-block">
+                      <button className="p-2 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-400 hover:text-primary shadow-sm hover:shadow-md">
+                        <span className="material-symbols-outlined text-xl">more_vert</span>
                       </button>
-                      {hasPermission(Permission.CUSTOMER_EDIT) && !tenantGuard.isReadOnly && (
-                        <button 
-                          onClick={() => handleEditCustomer(customer)}
-                          className="p-1 text-slate-400 hover:text-primary transition-colors"
-                          title="Edit Patient"
-                        >
-                          <span className="material-symbols-outlined text-base">edit</span>
-                        </button>
-                      )}
-                      {hasPermission(Permission.CUSTOMER_DELETE) && !tenantGuard.isReadOnly && (
-                        <button 
-                          onClick={() => handleDeleteCustomer(customer)}
-                          className="p-1 text-slate-400 hover:text-red-500 transition-colors"
-                          title="Delete Patient"
-                        >
-                          <span className="material-symbols-outlined text-base">delete</span>
-                        </button>
-                      )}
+                      <div className="absolute right-0 top-full pt-1 invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all z-[30]">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-1.5 w-48 overflow-hidden">
+                          <button 
+                            onClick={() => handleUpdateBalance(customer)}
+                            className="w-full text-left px-4 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-3 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-lg opacity-80">account_balance_wallet</span> Update Balance
+                          </button>
+                          <button 
+                            onClick={() => handleViewHistory(customer)}
+                            className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-lg opacity-60">history</span> Patient History
+                          </button>
+                          {hasPermission(Permission.CUSTOMER_EDIT) && !tenantGuard.isReadOnly && (
+                            <button 
+                              onClick={() => handleEditCustomer(customer)}
+                              className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-lg opacity-60">edit</span> Edit Patient
+                            </button>
+                          )}
+                          {hasPermission(Permission.CUSTOMER_DELETE) && !tenantGuard.isReadOnly && (
+                            <button 
+                              onClick={() => handleDeleteCustomer(customer)}
+                              className="w-full text-left px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 flex items-center gap-3 transition-colors border-t border-slate-50 dark:border-slate-700 mt-1"
+                            >
+                              <span className="material-symbols-outlined text-lg">delete</span> Delete Patient
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </td>
                 </tr>

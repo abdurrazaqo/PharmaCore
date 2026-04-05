@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth, Permission } from '../contexts/AuthContext';
 import { UserRole, UserProfile } from '../types';
 import { supabase } from '../services/supabaseClient';
@@ -125,9 +126,22 @@ const UserManagement: React.FC = () => {
         const action = confirmAction.currentStatus ? 'unsuspended' : 'suspended';
         showAlert('Success', `User ${action} successfully`, 'success');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error performing action:', error);
-      showAlert('Error', 'Failed to perform action', 'error');
+      let errorMessage = 'Failed to perform action';
+      
+      if (error.context) {
+         try {
+           const body = await error.context.json();
+           errorMessage = body.error || body.message || errorMessage;
+         } catch (e) {
+           errorMessage = error.message || errorMessage;
+         }
+      } else {
+        errorMessage = error.message || errorMessage;
+      }
+      
+      showAlert('Error', errorMessage, 'error');
     } finally {
       setShowConfirmModal(false);
       setConfirmAction(null);
@@ -141,6 +155,13 @@ const UserManagement: React.FC = () => {
     try {
       setIsSubmitting(true);
       
+      const { data: { session } } = await supabase!.auth.getSession();
+      if (!session) {
+        showAlert('Session Expired', 'Please sign in again to continue.', 'error');
+        setIsSubmitting(false);
+        return;
+      }
+
       const payload = {
         ...newUserForm,
         tenant_id: profile.tenant_id,
@@ -159,7 +180,20 @@ const UserManagement: React.FC = () => {
       loadUsers(); 
     } catch (error: any) {
       console.error('Error creating user:', error);
-      showAlert('Error', error.message || 'Failed to create user', 'error');
+      let errorMessage = 'Failed to create user';
+      
+      if (error.context) {
+         try {
+           const body = await error.context.json();
+           errorMessage = body.error || body.message || errorMessage;
+         } catch (e) {
+           errorMessage = error.message || errorMessage;
+         }
+      } else {
+        errorMessage = error.message || errorMessage;
+      }
+
+      showAlert('Error', errorMessage, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -239,20 +273,22 @@ const UserManagement: React.FC = () => {
   }
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-8 relative min-h-screen">
+      <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold dark:text-white">User Management</h2>
-          <p className="text-sm text-slate-500">View users and their permissions</p>
+          <h2 className="text-xl lg:text-2xl font-bold dark:text-white">User Management</h2>
+          <p className="text-xs lg:text-sm text-slate-500">View users and their permissions</p>
         </div>
         {hasPermission(Permission.USERS_CREATE) && (
           <button
             onClick={() => setShowAddUserModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 w-full sm:w-auto"
           >
-            <span className="material-symbols-outlined text-lg">person_add</span>
-            Add User
+            <span className="material-symbols-outlined text-[20px]">person_add</span>
+            <span className="font-semibold text-sm">Add User</span>
           </button>
         )}
       </div>
@@ -267,7 +303,7 @@ const UserManagement: React.FC = () => {
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Branches</p>
           <h3 className="text-2xl font-bold mt-1">
-            {new Set(users.map(u => u.branch_id).filter(Boolean)).size}
+            {branches.length}
           </h3>
         </div>
 
@@ -320,14 +356,14 @@ const UserManagement: React.FC = () => {
 
       {/* Users Table */}
       <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[400px]">
           <table className="w-full text-left border-collapse min-w-full">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                 <th className="px-3 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Name</th>
                 <th className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Role</th>
                 <th className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden sm:table-cell">Status</th>
-                <th className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Last Login</th>
+                <th className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden md:table-cell">Last Login</th>
                 <th className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Actions</th>
               </tr>
             </thead>
@@ -349,10 +385,16 @@ const UserManagement: React.FC = () => {
                   <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                     <td className="px-3 lg:px-6 py-3 lg:py-4">
                       <div className="flex items-center gap-2">
-                        <div className="size-7 lg:size-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[10px] lg:text-xs font-bold flex-shrink-0">
-                          {(user.display_name || 'U')[0].toUpperCase()}
+                        <div className="relative shrink-0">
+                          <div className="size-7 lg:size-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[10px] lg:text-xs font-bold">
+                            {(user.display_name || 'U')[0].toUpperCase()}
+                          </div>
+                          {/* Status dot on mobile */}
+                          <div className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-white dark:border-surface-dark sm:hidden ${
+                            user.is_suspended === true ? 'bg-red-500' : 'bg-green-500'
+                          }`} />
                         </div>
-                        <span className="font-medium text-slate-900 dark:text-white text-xs lg:text-base break-words max-w-[120px] lg:max-w-none">
+                        <span className="font-semibold text-slate-900 dark:text-white text-xs lg:text-base break-words max-w-[100px] lg:max-w-none">
                           {user.display_name || 'Unnamed User'}
                         </span>
                       </div>
@@ -371,7 +413,7 @@ const UserManagement: React.FC = () => {
                         {user.is_suspended === true ? 'Suspended' : 'Active'}
                       </span>
                     </td>
-                    <td className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                    <td className="px-2 lg:px-6 py-3 lg:py-4 text-[10px] lg:text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap hidden md:table-cell">
                       {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString('en-US', { 
                         year: 'numeric', 
                         month: 'short', 
@@ -379,40 +421,45 @@ const UserManagement: React.FC = () => {
                       }) : 'Never'}
                     </td>
                     <td className="px-2 lg:px-6 py-3 lg:py-4 text-right">
-                      <div className="flex justify-end gap-0.5 lg:gap-1">
-                        {hasPermission(Permission.USERS_EDIT) && (
-                          <button
-                            onClick={() => handleEditUser(user)}
-                            className="p-1 text-slate-400 hover:text-primary transition-colors"
-                            title="Edit User"
-                          >
-                            <span className="material-symbols-outlined text-base lg:text-lg">edit</span>
-                          </button>
-                        )}
-                        {hasPermission(Permission.USERS_EDIT) && user.id !== profile?.id && (
-                          <button
-                            onClick={() => handleSuspendUser(user.id, user.is_suspended === true)}
-                            className={`p-1 transition-colors ${
-                              user.is_suspended === true
-                                ? 'text-slate-400 hover:text-green-500' 
-                                : 'text-slate-400 hover:text-orange-500'
-                            }`}
-                            title={user.is_suspended === true ? 'Unsuspend User' : 'Suspend User'}
-                          >
-                            <span className="material-symbols-outlined text-base lg:text-lg">
-                              {user.is_suspended === true ? 'check_circle' : 'block'}
-                            </span>
-                          </button>
-                        )}
-                        {hasPermission(Permission.USERS_DELETE) && user.id !== profile?.id && (
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
-                            title="Delete User"
-                          >
-                            <span className="material-symbols-outlined text-base lg:text-lg">delete</span>
-                          </button>
-                        )}
+                      <div className="relative group/menu inline-block">
+                        <button className="p-2 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-400 hover:text-primary shadow-sm hover:shadow-md">
+                          <span className="material-symbols-outlined text-xl">more_vert</span>
+                        </button>
+                        <div className="absolute right-0 top-full pt-1 invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all z-[30]">
+                          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-1.5 w-48 overflow-hidden">
+                            {hasPermission(Permission.USERS_EDIT) && (
+                              <button
+                                onClick={() => handleEditUser(user)}
+                                className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-lg opacity-60">edit</span> Edit User
+                              </button>
+                            )}
+                            {hasPermission(Permission.USERS_EDIT) && user.id !== profile?.id && (
+                              <button
+                                onClick={() => handleSuspendUser(user.id, user.is_suspended === true)}
+                                className={`w-full text-left px-4 py-2 text-sm font-semibold flex items-center gap-3 transition-colors ${
+                                  user.is_suspended === true
+                                    ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20' 
+                                    : 'text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-lg opacity-80">
+                                  {user.is_suspended === true ? 'check_circle' : 'block'}
+                                </span>
+                                {user.is_suspended === true ? 'Unsuspend' : 'Suspend user'}
+                              </button>
+                            )}
+                            {hasPermission(Permission.USERS_DELETE) && user.id !== profile?.id && (
+                              <button
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="w-full text-left px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 flex items-center gap-3 transition-colors border-t border-slate-50 dark:border-slate-700 mt-1"
+                              >
+                                <span className="material-symbols-outlined text-lg">delete</span> Delete User
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -521,101 +568,157 @@ const UserManagement: React.FC = () => {
         </div>
       </div>
 
+      </div>
+
       {/* Add User Modal */}
-      {showAddUserModal && (
-        <div className="modal-overlay bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-lg w-full">
-            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
+      {showAddUserModal && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-surface-dark rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            {/* Sticky Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 shrink-0">
               <h3 className="text-xl font-bold dark:text-white">Add New User</h3>
-              <button onClick={() => setShowAddUserModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+              <button 
+                onClick={() => setShowAddUserModal(false)} 
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-400"
+              >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             
-            <form onSubmit={handleAddUserSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
-                <input required type="email" value={newUserForm.email} onChange={e => setNewUserForm({...newUserForm, email: e.target.value})} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-primary" placeholder="user@example.com" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
-                <input required type="password" value={newUserForm.password} onChange={e => setNewUserForm({...newUserForm, password: e.target.value})} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-primary" placeholder="Minimum 6 characters" minLength={6} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Display Name</label>
-                <input required type="text" value={newUserForm.display_name} onChange={e => setNewUserForm({...newUserForm, display_name: e.target.value})} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-primary" placeholder="Full Name" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Role</label>
-                <select required value={newUserForm.role} onChange={e => setNewUserForm({...newUserForm, role: e.target.value as UserRole})} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-primary">
-                  <option value={UserRole.CASHIER}>Cashier</option>
-                  <option value={UserRole.PHARMACY_TECHNICIAN}>Pharmacy Technician</option>
-                  <option value={UserRole.PHARMACIST}>Pharmacist</option>
-                  {profile?.role === UserRole.TENANT_ADMIN && <option value={UserRole.BRANCH_ADMIN}>Branch Admin</option>}
-                  {profile?.role === UserRole.TENANT_ADMIN && <option value={UserRole.TENANT_ADMIN}>Tenant Admin</option>}
-                </select>
-              </div>
-              {newUserForm.role !== UserRole.TENANT_ADMIN && (
+            {/* Scrollable Body */}
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Branch</label>
-                  <select required={newUserForm.role !== UserRole.TENANT_ADMIN && profile?.role === UserRole.TENANT_ADMIN} value={newUserForm.branch_id} onChange={e => setNewUserForm({...newUserForm, branch_id: e.target.value})} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-primary">
-                    <option value="">Select a branch</option>
-                    {branches.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
+                  <input 
+                    required 
+                    type="email" 
+                    value={newUserForm.email} 
+                    onChange={e => setNewUserForm({...newUserForm, email: e.target.value})} 
+                    className="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" 
+                    placeholder="user@example.com" 
+                  />
                 </div>
-              )}
-              
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <button type="button" onClick={() => setShowAddUserModal(false)} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="px-4 py-2 text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50">
-                  {isSubmitting ? 'Creating...' : 'Create User'}
-                </button>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Password</label>
+                  <input 
+                    required 
+                    type="password" 
+                    value={newUserForm.password} 
+                    onChange={e => setNewUserForm({...newUserForm, password: e.target.value})} 
+                    className="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" 
+                    placeholder="Minimum 6 characters" 
+                    minLength={6} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Display Name</label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={newUserForm.display_name} 
+                    onChange={e => setNewUserForm({...newUserForm, display_name: e.target.value})} 
+                    className="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" 
+                    placeholder="Full Name" 
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">User Role</label>
+                    <select 
+                      required 
+                      value={newUserForm.role} 
+                      onChange={e => setNewUserForm({...newUserForm, role: e.target.value as UserRole})} 
+                      className="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-primary outline-none transition-all"
+                    >
+                      <option value={UserRole.CASHIER}>Cashier</option>
+                      <option value={UserRole.PHARMACY_TECHNICIAN}>Pharmacy Technician</option>
+                      <option value={UserRole.PHARMACIST}>Pharmacist</option>
+                      {profile?.role === UserRole.TENANT_ADMIN && <option value={UserRole.BRANCH_ADMIN}>Branch Admin</option>}
+                      {profile?.role === UserRole.TENANT_ADMIN && <option value={UserRole.TENANT_ADMIN}>Tenant Admin</option>}
+                    </select>
+                  </div>
+                  {newUserForm.role !== UserRole.TENANT_ADMIN && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
+                      <select 
+                        required={newUserForm.role !== UserRole.TENANT_ADMIN && profile?.role === UserRole.TENANT_ADMIN} 
+                        value={newUserForm.branch_id} 
+                        onChange={e => setNewUserForm({...newUserForm, branch_id: e.target.value})} 
+                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-primary outline-none transition-all"
+                      >
+                        <option value="">Select branch</option>
+                        {branches.map(b => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
               </div>
-            </form>
+            </div>
+            
+            {/* Sticky Footer */}
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800 flex items-center gap-3 shrink-0">
+              <button 
+                type="button" 
+                onClick={() => setShowAddUserModal(false)} 
+                className="flex-1 px-4 py-3.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                onClick={handleAddUserSubmit}
+                disabled={isSubmitting} 
+                className="flex-[2] px-4 py-3.5 text-white bg-primary hover:bg-primary/90 font-bold rounded-2xl transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+              >
+                {isSubmitting ? 'Creating...' : 'Create User'}
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Edit User Modal */}
-      {showEditUserModal && selectedUser && (
-        <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
-          <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-md w-full">
+      {showEditUserModal && selectedUser && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-surface-dark rounded-3xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200 overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-xl font-bold dark:text-white">Edit User</h3>
               <button
                 onClick={() => setShowEditUserModal(false)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-400"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
                   Display Name
                 </label>
                 <input
                   type="text"
                   value={editFormData.display_name}
                   onChange={(e) => setEditFormData({ ...editFormData, display_name: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary outline-none transition-all"
                   placeholder="Enter display name"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
                   Role
                 </label>
                 <select
                   value={editFormData.role}
                   onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as UserRole })}
-                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary outline-none transition-all"
                 >
                   <option value={UserRole.CASHIER}>Cashier</option>
                   <option value={UserRole.PHARMACY_TECHNICIAN}>Pharmacy Technician</option>
@@ -628,15 +731,15 @@ const UserManagement: React.FC = () => {
                 </select>
               </div>
 
-              <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+              <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
                 <input
                   type="checkbox"
                   id="is_suspended"
                   checked={editFormData.is_suspended}
                   onChange={(e) => setEditFormData({ ...editFormData, is_suspended: e.target.checked })}
-                  className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary"
+                  className="w-5 h-5 text-primary border-slate-300 rounded-lg focus:ring-primary"
                 />
-                <label htmlFor="is_suspended" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label htmlFor="is_suspended" className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                   Suspend this user
                 </label>
               </div>
@@ -646,37 +749,38 @@ const UserManagement: React.FC = () => {
             <div className="flex justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-800">
               <button
                 onClick={() => setShowEditUserModal(false)}
-                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpdateUser}
-                className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+                className="flex-[2] px-4 py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl transition-all shadow-lg shadow-primary/20"
               >
                 Save Changes
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Confirmation Modal */}
-      {showConfirmModal && confirmAction && (
-        <div className="modal-overlay bg-black/50 flex items-center justify-center p-4">
-          <div className="modal-content bg-white dark:bg-surface-dark rounded-xl shadow-2xl max-w-md w-full">
+      {showConfirmModal && confirmAction && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-surface-dark rounded-3xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200 overflow-hidden">
             {/* Modal Header */}
             <div className="p-6 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className={`p-3 rounded-full ${
+              <div className="flex items-center gap-4">
+                <div className={`p-4 rounded-2xl shrink-0 ${
                   confirmAction.type === 'delete' 
-                    ? 'bg-red-100 dark:bg-red-900/30' 
-                    : 'bg-orange-100 dark:bg-orange-900/30'
+                    ? 'bg-rose-100 dark:bg-rose-900/30' 
+                    : 'bg-amber-100 dark:bg-amber-900/30'
                 }`}>
                   <span className={`material-symbols-outlined text-2xl ${
                     confirmAction.type === 'delete' 
-                      ? 'text-red-600 dark:text-red-400' 
-                      : 'text-orange-600 dark:text-orange-400'
+                      ? 'text-rose-600 dark:text-rose-400' 
+                      : 'text-amber-600 dark:text-amber-400'
                   }`}>
                     {confirmAction.type === 'delete' ? 'delete' : 'block'}
                   </span>
@@ -687,10 +791,10 @@ const UserManagement: React.FC = () => {
                       ? 'Delete User' 
                       : confirmAction.currentStatus ? 'Unsuspend User' : 'Suspend User'}
                   </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mt-0.5">
                     {confirmAction.type === 'delete' 
-                      ? 'This action cannot be undone' 
-                      : 'You can reverse this action later'}
+                      ? 'Permanent Action' 
+                      : 'Reversible Action'}
                   </p>
                 </div>
               </div>
@@ -698,12 +802,12 @@ const UserManagement: React.FC = () => {
 
             {/* Modal Content */}
             <div className="p-6">
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                 {confirmAction.type === 'delete' 
-                  ? 'Are you sure you want to delete this user? All their data will be permanently removed from the system.' 
+                  ? 'Are you sure you want to delete this user? This will permanently remove their access and all associated data from the platform.' 
                   : confirmAction.currentStatus
-                    ? 'Are you sure you want to unsuspend this user? They will regain access to the system.'
-                    : 'Are you sure you want to suspend this user? They will not be able to log in until unsuspended.'}
+                    ? 'Are you sure you want to unsuspend this user? They will immediately regain access to their account and branch data.'
+                    : 'Are you sure you want to suspend this user? They will be signed out and unable to log in until an administrator unsuspends them.'}
               </p>
             </div>
 
@@ -714,27 +818,28 @@ const UserManagement: React.FC = () => {
                   setShowConfirmModal(false);
                   setConfirmAction(null);
                 }}
-                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                className="flex-1 px-4 py-3.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={executeConfirmAction}
-                className={`px-4 py-2 rounded-lg transition-colors text-white ${
+                className={`flex-[2] px-4 py-3.5 rounded-2xl transition-all text-white font-bold shadow-lg ${
                   confirmAction.type === 'delete'
-                    ? 'bg-red-600 hover:bg-red-700'
+                    ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
                     : confirmAction.currentStatus
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-orange-600 hover:bg-orange-700'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                      : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
                 }`}
               >
                 {confirmAction.type === 'delete' 
-                  ? 'Delete User' 
-                  : confirmAction.currentStatus ? 'Unsuspend' : 'Suspend'}
+                  ? 'Confirm Delete' 
+                  : confirmAction.currentStatus ? 'Confirm Unsuspend' : 'Confirm Suspend'}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Alert Modal */}

@@ -115,18 +115,18 @@ const SuperadminPending: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-slate-400 animate-pulse font-bold uppercase tracking-widest text-xs">Loading Super Admin queue...</div>;
+    return <div className="p-8 text-center text-slate-400 animate-pulse font-semibold uppercase tracking-widest text-xs">Loading Super Admin queue...</div>;
   }
 
   return (
     <div className="space-y-4 lg:space-y-6 pb-12">
       <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 lg:p-6 rounded-2xl lg:rounded-3xl border border-slate-100 shadow-sm gap-4">
         <div className="flex items-center gap-4 lg:gap-6 w-full sm:w-auto justify-between sm:justify-start">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
             {60 - lastUpdated}s
           </div>
-          <button onClick={() => loadRequests()} className="text-[#006C75] font-black text-xs lg:text-sm hover:underline flex items-center gap-1 uppercase tracking-wider">
+          <button onClick={() => loadRequests()} className="text-[#006C75] font-bold text-xs lg:text-sm hover:underline flex items-center gap-1 uppercase tracking-wider">
             <span className="material-symbols-outlined text-sm">refresh</span>
             Refresh
           </button>
@@ -134,7 +134,7 @@ const SuperadminPending: React.FC = () => {
         
         <Link 
           to="/superadmin/rejected" 
-          className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest"
+          className="flex items-center gap-2 text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest"
         >
           <span className="material-symbols-outlined text-lg">history_toggle_off</span>
           Rejected Applications
@@ -142,122 +142,124 @@ const SuperadminPending: React.FC = () => {
       </div>
 
       {requests.length === 0 ? (
-        <div className="bg-white rounded-2xl lg:rounded-3xl border border-slate-100 p-12 lg:p-20 text-center shadow-sm">
-          <div className="w-20 h-20 lg:w-24 lg:h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="material-symbols-outlined text-4xl lg:text-5xl">verified</span>
+        <div className="bg-white rounded-[32px] border border-slate-100 p-12 lg:p-24 text-center shadow-sm min-h-[400px] flex flex-col items-center justify-center">
+          <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-8 animate-in zoom-in duration-500">
+            <span className="material-symbols-outlined text-5xl">verified</span>
           </div>
-          <h3 className="text-xl lg:text-2xl font-bold text-slate-800 mb-2 font-inter">Queue is Empty!</h3>
-          <p className="text-sm text-slate-500 font-inter">All caught up. No pending registrations to review.</p>
+          <h3 className="text-2xl font-bold text-slate-800 mb-3 tracking-tight">Queue is Empty!</h3>
+          <p className="text-slate-500 font-semibold text-sm max-w-xs mx-auto leading-relaxed">All caught up. No pending registrations to review at this time.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="bg-white rounded-2xl lg:rounded-[32px] border border-slate-100 shadow-sm overflow-hidden min-h-[500px]">
           {/* Desktop Table View */}
-          <div className="hidden lg:block bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[1000px]">
-                <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200">
-                    <th className="py-4 px-8 text-[10px] font-bold uppercase tracking-wider text-slate-500">Pharmacy Details</th>
-                    <th className="py-4 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Contact Person</th>
-                    <th className="py-4 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">PCN Number</th>
-                    <th className="py-4 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Submitted</th>
-                    <th className="py-4 px-8 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Actions</th>
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-100">
+                  <th className="py-5 px-8 text-[10px] font-bold uppercase tracking-widest text-slate-400">Pharmacy Details</th>
+                  <th className="py-5 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Contact Person</th>
+                  <th className="py-5 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center">PCN Number</th>
+                  <th className="py-5 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center">Submitted</th>
+                  <th className="py-5 px-8 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {requests.map((req) => (
+                  <tr key={req.id} className="hover:bg-slate-50/50 transition-colors group border-l-4 border-l-transparent hover:border-l-[#006C75]">
+                    <td className="py-6 px-8">
+                      <p className="font-semibold text-sm text-slate-800 mb-0.5">{req.pharmacy_name}</p>
+                      <p className="text-[10px] text-slate-400 font-medium font-mono">{req.pharmacy_email}</p>
+                    </td>
+                    <td className="py-6 px-4">
+                      <div className="flex flex-col">
+                         <span className="font-semibold text-slate-700 text-sm">{req.contact_person_name}</span>
+                         <span className="text-[10px] text-slate-400 font-medium">{req.pharmacy_phone}</span>
+                      </div>
+                    </td>
+                    <td className="py-6 px-4 text-center">
+                      <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-3 py-1 rounded-full border border-blue-100 uppercase tracking-widest shadow-sm">
+                        {req.pcn_number || 'UNVERIFIED'}
+                      </span>
+                    </td>
+                    <td className="py-6 px-4 text-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                        {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
+                      </span>
+                    </td>
+                    <td className="py-6 px-8 text-right">
+                      <div className="flex justify-end gap-3">
+                        <button 
+                          onClick={() => { setSelectedRequest(req); setModalType('approve'); }}
+                          className="bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-95 flex items-center gap-2"
+                        >
+                           <span className="material-symbols-outlined text-base">check_circle</span>
+                           Approve
+                        </button>
+                        <button 
+                          onClick={() => { setSelectedRequest(req); setModalType('reject'); }}
+                          className="bg-white border border-slate-200 text-red-400 text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm active:scale-95 flex items-center gap-2"
+                        >
+                           <span className="material-symbols-outlined text-base">cancel</span>
+                           Reject
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {requests.map((req) => (
-                    <tr key={req.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="py-5 px-8">
-                        <p className="font-bold text-sm text-slate-800">{req.pharmacy_name}</p>
-                        <p className="text-[10px] text-slate-400 font-medium">{req.pharmacy_email}</p>
-                      </td>
-                      <td className="py-5 px-4 font-medium text-slate-600 text-sm">
-                        <div className="flex flex-col">
-                           <span className="font-bold">{req.contact_person_name}</span>
-                           <span className="text-[10px] text-slate-400">{req.pharmacy_phone}</span>
-                        </div>
-                      </td>
-                      <td className="py-5 px-4">
-                        <span className="bg-blue-50 text-blue-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-widest">
-                          {req.pcn_number || 'UNVERIFIED'}
-                        </span>
-                      </td>
-                      <td className="py-5 px-4 text-center">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">
-                          {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
-                        </span>
-                      </td>
-                      <td className="py-5 px-8 text-right">
-                        <div className="flex justify-end gap-3">
-                          <button 
-                            onClick={() => { setSelectedRequest(req); setModalType('approve'); }}
-                            className="bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-95 flex items-center gap-2"
-                          >
-                             <span className="material-symbols-outlined text-base">check_circle</span>
-                             Approve
-                          </button>
-                          <button 
-                            onClick={() => { setSelectedRequest(req); setModalType('reject'); }}
-                            className="bg-white border border-slate-200 text-red-400 text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm active:scale-95 flex items-center gap-2"
-                          >
-                             <span className="material-symbols-outlined text-base">cancel</span>
-                             Reject
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {/* Mobile Card View */}
-          <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-6 auto-rows-fr">
+          <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-4 p-4 lg:p-6 bg-slate-50/30">
             {requests.map((req) => (
-              <div key={req.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col p-6 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 relative group overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <span className="material-symbols-outlined text-6xl">receipt</span>
+              <div key={req.id} className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                  <span className="material-symbols-outlined text-7xl">receipt_long</span>
                 </div>
                 
-                <div className="flex justify-between items-start mb-4 relative z-10">
-                  <h3 className="text-xl font-black text-slate-800 leading-tight pr-8">{req.pharmacy_name}</h3>
-                  <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-lg shrink-0">
-                    {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
-                  </span>
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <h3 className="text-lg font-bold text-slate-800 leading-tight mb-1 truncate">{req.pharmacy_name}</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="space-y-3 mb-6 relative z-10">
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <span className="material-symbols-outlined text-lg text-slate-300">person</span>
-                    <span className="font-bold">{req.contact_person_name}</span>
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-[#006C75] group-hover:bg-teal-50 transition-colors">
+                      <span className="material-symbols-outlined text-lg">person</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm text-slate-700 leading-none mb-1">{req.contact_person_name}</span>
+                      <span className="text-[10px] font-semibold text-slate-400">{req.pharmacy_email}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <span className="material-symbols-outlined text-lg text-slate-300">mail</span>
-                    <span className="truncate font-medium">{req.pharmacy_email}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <span className="material-symbols-outlined text-lg text-slate-300">badge</span>
-                    <span className="uppercase text-[10px] font-black tracking-widest bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100">
+                  
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">PCN Number</span>
+                    <span className="uppercase text-[9px] font-bold tracking-widest bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100">
                       {req.pcn_number || 'UNVERIFIED'}
                     </span>
                   </div>
                 </div>
 
-                <div className="mt-auto pt-6 border-t border-slate-50 flex gap-3 relative z-10">
+                <div className="grid grid-cols-2 gap-4">
                   <button 
                     onClick={() => { setSelectedRequest(req); setModalType('approve'); }}
-                    className="flex-1 bg-[#006C75] text-white font-black text-[10px] uppercase tracking-widest py-3 rounded-2xl shadow-lg shadow-[#006C75]/20 hover:bg-[#005a62] transition-all flex items-center justify-center gap-2"
+                    className="bg-[#006C75] text-white font-bold text-[10px] uppercase tracking-widest py-3.5 rounded-2xl shadow-lg shadow-[#006C75]/20 hover:bg-[#005a62] transition-all flex items-center justify-center gap-2 active:scale-95"
                   >
                      <span className="material-symbols-outlined text-base">check_circle</span>
                      Approve
                   </button>
                   <button 
                     onClick={() => { setSelectedRequest(req); setModalType('reject'); }}
-                    className="px-4 py-3 border border-red-100 text-red-400 rounded-2xl hover:bg-red-50 transition-all flex items-center justify-center"
-                    title="Reject"
+                    className="bg-white border border-red-100 text-red-500 font-bold text-[10px] uppercase tracking-widest py-3.5 rounded-2xl hover:bg-red-50 transition-all flex items-center justify-center gap-2 active:scale-95"
                   >
-                     <span className="material-symbols-outlined text-xl">cancel</span>
+                     <span className="material-symbols-outlined text-base">cancel</span>
+                     Reject
                   </button>
                 </div>
               </div>
@@ -270,14 +272,14 @@ const SuperadminPending: React.FC = () => {
       {modalType === 'approve' && selectedRequest && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl p-8 animate-in fade-in zoom-in duration-300">
-            <h3 className="text-2xl font-black text-slate-800 mb-2">Confirm Approval</h3>
+            <h3 className="text-2xl font-bold text-slate-800 mb-2">Confirm Approval</h3>
             <p className="text-slate-500 mb-8 leading-relaxed">
               You are approving <strong>{selectedRequest.pharmacy_name}</strong>. Their admin will receive a setup link at <strong>{selectedRequest.pharmacy_email}</strong>.
             </p>
             
             <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 mb-8 space-y-2">
-              <p className="text-emerald-800 font-bold mb-1 tracking-tight">Access Token Validated</p>
-              <div className="flex justify-between text-xs text-emerald-600 font-bold uppercase tracking-widest">
+              <p className="text-emerald-800 font-semibold mb-1 tracking-tight">Access Token Validated</p>
+              <div className="flex justify-between text-xs text-emerald-600 font-semibold uppercase tracking-widest">
                 <span>Access Code</span>
                 <span>{selectedRequest.access_code}</span>
               </div>
@@ -286,14 +288,14 @@ const SuperadminPending: React.FC = () => {
             <div className="flex gap-4">
               <button 
                 onClick={() => setModalType(null)} 
-                className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl transition-all"
+                className="flex-1 bg-slate-100 text-slate-600 font-semibold py-4 rounded-2xl transition-all"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleApprove}
                 disabled={!!isProcessing}
-                className="flex-[2] bg-[#006C75] text-white font-bold py-4 rounded-2xl shadow-lg shadow-[#006C75]/20 hover:bg-[#005a62] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                className="flex-[2] bg-[#006C75] text-white font-semibold py-4 rounded-2xl shadow-lg shadow-[#006C75]/20 hover:bg-[#005a62] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
               >
                 {isProcessing === selectedRequest.id ? 'Processing...' : 'Approve & Send Email'}
               </button>
@@ -307,10 +309,10 @@ const SuperadminPending: React.FC = () => {
       {modalType === 'reject' && selectedRequest && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl p-8">
-            <h3 className="text-2xl font-black text-slate-800 mb-2">Reject Application</h3>
+            <h3 className="text-2xl font-bold text-slate-800 mb-2">Reject Application</h3>
             <p className="text-slate-500 mb-6">Tell the pharmacy why their application was rejected. This is required.</p>
             
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Rejection Reason</label>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Rejection Reason</label>
             <textarea 
               autoFocus
               className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:border-red-500 focus:outline-none transition-all placeholder-slate-300 mb-8"
@@ -322,14 +324,14 @@ const SuperadminPending: React.FC = () => {
             <div className="flex gap-4">
               <button 
                 onClick={() => setModalType(null)} 
-                className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl transition-all"
+                className="flex-1 bg-slate-100 text-slate-600 font-semibold py-4 rounded-2xl transition-all"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleReject}
                 disabled={!!isProcessing || !rejectionReason.trim()}
-                className="flex-[2] bg-red-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-500/20 hover:bg-red-600 disabled:opacity-50 transition-all"
+                className="flex-[2] bg-red-500 text-white font-semibold py-4 rounded-2xl shadow-lg shadow-red-500/20 hover:bg-red-600 disabled:opacity-50 transition-all"
               >
                 {isProcessing === selectedRequest.id ? 'Processing...' : 'Reject Application'}
               </button>

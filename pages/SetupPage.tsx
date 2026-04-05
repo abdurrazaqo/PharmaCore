@@ -195,8 +195,8 @@ export default function SetupPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col font-inter">
         <OnboardHeader />
-        <main className="flex-1 max-w-2xl w-full mx-auto p-4 md:p-8">
-          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-12 text-center">
+        <main className="flex-1 max-w-2xl w-full mx-auto p-2 sm:p-4 md:p-8">
+          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 md:p-12 text-center">
             <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <span className="material-symbols-outlined text-3xl text-slate-400">key</span>
             </div>
@@ -207,7 +207,7 @@ export default function SetupPage() {
               <input 
                 type="text"
                 placeholder="Enter setup token"
-                className="w-full text-center text-lg font-mono py-4 px-6 rounded-2xl border-2 border-slate-200 focus:border-[#006C75] focus:outline-none transition-all"
+                className="w-full text-center text-lg font-mono py-4 px-6 rounded-2xl border-2 border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white"
                 value={manualToken}
                 onChange={(e) => setManualToken(e.target.value)}
               />
@@ -268,8 +268,8 @@ export default function SetupPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col font-inter antialiased">
       <OnboardHeader />
 
-      <main className="flex-1 max-w-2xl w-full mx-auto p-4 md:p-8">
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-12">
+      <main className="flex-1 max-w-2xl w-full mx-auto p-2 sm:p-4 md:p-8">
+        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 md:p-12">
           <div className="mb-10">
             <h2 className="text-3xl font-bold text-slate-900 mb-2">Complete Your Setup</h2>
             <p className="text-slate-500">Welcome to PharmaCore! Let's create your administrator account for <strong>{prefill?.pharmacy_name}</strong>.</p>
@@ -285,7 +285,7 @@ export default function SetupPage() {
                     <input
                       type="text"
                       required
-                      className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all"
+                      className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white"
                       value={formData.pharmacyName}
                       onChange={(e) => setFormData({ ...formData, pharmacyName: e.target.value })}
                     />
@@ -295,7 +295,7 @@ export default function SetupPage() {
                     <input
                       type="email"
                       required
-                      className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all"
+                      className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white"
                       value={formData.pharmacyEmail}
                       onChange={(e) => setFormData({ ...formData, pharmacyEmail: e.target.value })}
                     />
@@ -305,7 +305,7 @@ export default function SetupPage() {
                     <input
                       type="tel"
                       required
-                      className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all"
+                      className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white"
                       value={formData.pharmacyPhone}
                       onChange={(e) => setFormData({ ...formData, pharmacyPhone: e.target.value })}
                     />
@@ -315,7 +315,7 @@ export default function SetupPage() {
                     <input
                       type="text"
                       required
-                      className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all"
+                      className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900 bg-white"
                       value={formData.pharmacyAddress}
                       onChange={(e) => setFormData({ ...formData, pharmacyAddress: e.target.value })}
                     />
@@ -330,7 +330,7 @@ export default function SetupPage() {
                   <input
                     type="text"
                     required
-                    className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all"
+                    className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900"
                     value={formData.adminName}
                     onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
                   />
@@ -340,7 +340,7 @@ export default function SetupPage() {
                   <input
                     type="email"
                     required
-                    className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all"
+                    className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all text-slate-900"
                     value={formData.adminEmail}
                     onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
                   />
@@ -351,7 +351,7 @@ export default function SetupPage() {
                     type="password"
                     required
                     minLength={8}
-                    className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all font-mono"
+                    className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-[#006C75] focus:outline-none transition-all font-mono text-slate-900 bg-white"
                     placeholder="Create a secure password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -377,7 +377,7 @@ export default function SetupPage() {
                   <input
                     type="password"
                     required
-                    className={`w-full px-5 py-3.5 rounded-xl border-2 transition-all font-mono ${formData.confirmPassword ? (formData.password === formData.confirmPassword ? 'border-emerald-100' : 'border-red-100') : 'border-slate-200'
+                    className={`w-full px-5 py-3.5 rounded-xl border-2 transition-all font-mono text-slate-900 bg-white ${formData.confirmPassword ? (formData.password === formData.confirmPassword ? 'border-emerald-100' : 'border-red-100') : 'border-slate-200'
                       }`}
                     placeholder="Verify your password"
                     value={formData.confirmPassword}

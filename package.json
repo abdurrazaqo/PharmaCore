@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "seed-demo": "tsx scripts/seedDemoData.ts"
+    "seed-demo": "tsx scripts/seedDemoData.ts",
+    "cleanup-beta": "tsx scripts/cleanupBetaData.ts"
   },
   "dependencies": {
     "@google/genai": "^1.42.0",

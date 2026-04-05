@@ -382,7 +382,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <th className="px-3 lg:px-6 py-4">Invoice ID</th>
                 <th className="px-6 py-4 hidden lg:table-cell">Customer</th>
                 <th className="px-3 lg:px-6 py-4">Date & Time</th>
-                <th className="px-3 lg:px-6 py-4">Amount</th>
+                <th className="px-3 lg:px-6 py-4 text-center">Amount</th>
                 <th className="px-3 lg:px-6 py-4 hidden lg:table-cell">Payment</th>
                 <th className="px-6 py-4 hidden lg:table-cell">Status</th>
                 <th className="px-3 lg:px-6 py-4 text-right">Actions</th>
@@ -420,18 +420,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   
                   return (
                 <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                  <td className="px-3 lg:px-6 py-4 font-mono text-xs lg:text-sm dark:text-slate-300 break-all max-w-[100px] lg:max-w-none">{tx.id}</td>
+                  <td className="px-3 lg:px-6 py-4 font-mono text-[10px] lg:text-sm dark:text-slate-300 break-all max-w-[80px] lg:max-w-none">{tx.id}</td>
                   <td className="px-6 py-4 hidden lg:table-cell"><div className="flex items-center gap-3"><div className="size-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold">{tx.initials}</div><span className="text-sm font-medium dark:text-white">{tx.customer}</span></div></td>
-                  <td className="px-3 lg:px-6 py-4"><div className="flex flex-col"><span className="text-xs font-medium dark:text-white break-words">{datePart}</span>{timePart && <span className="text-[10px] text-slate-500 break-words">{timePart}</span>}</div></td>
-                  <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-bold dark:text-white">₦{tx.amount.toFixed(2)}</td>
+                  <td className="px-3 lg:px-6 py-4"><div className="flex flex-col"><span className="text-[10px] sm:text-xs font-semibold dark:text-white break-words">{datePart}</span>{timePart && <span className="text-[9px] sm:text-[10px] text-slate-500 break-words">{timePart}</span>}</div></td>
+                  <td className="px-3 lg:px-6 py-4 text-[10px] lg:text-sm font-bold dark:text-white text-center">₦{tx.amount.toFixed(0)}</td>
                   <td className="px-3 lg:px-6 py-4 hidden lg:table-cell"><span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${tx.paymentMethod === 'Cash' ? 'bg-green-100 text-green-700' : tx.paymentMethod === 'Card' ? 'bg-blue-100 text-blue-700' : tx.paymentMethod === 'Transfer' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700'}`}><span className="material-symbols-outlined text-xs">{tx.paymentMethod === 'Cash' ? 'payments' : tx.paymentMethod === 'Card' ? 'credit_card' : tx.paymentMethod === 'Transfer' ? 'swap_horiz' : 'help'}</span>{tx.paymentMethod || 'Cash'}</span></td>
                   <td className="px-6 py-4 hidden lg:table-cell"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tx.status === 'Completed' ? 'bg-green-100 text-green-800' : tx.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{tx.status}</span></td>
                   <td className="px-3 lg:px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {tx.status === 'Completed' && hasPermission(Permission.SALES_REFUND) && !tenantGuard.isReadOnly && (
-                        <button onClick={() => setReturnTransactionId(tx.id)} className="text-slate-400 hover:text-red-500 transition-colors" title="Process Return"><span className="material-symbols-outlined text-lg lg:text-xl">undo</span></button>
-                      )}
-                      <button onClick={() => setPrintTransactionId(tx.id)} className="text-slate-400 hover:text-primary transition-colors" title="Print Receipt"><span className="material-symbols-outlined text-lg lg:text-xl">print</span></button>
+                    <div className="relative group/menu inline-block">
+                      <button className="p-2 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-400 hover:text-primary shadow-sm hover:shadow-md">
+                        <span className="material-symbols-outlined text-xl">more_vert</span>
+                      </button>
+                      <div className="absolute right-0 top-full pt-1 invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all z-[30]">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-1.5 w-48 overflow-hidden">
+                          <button
+                            onClick={() => setPrintTransactionId(tx.id)}
+                            className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-lg opacity-60">print</span> Print Receipt
+                          </button>
+                          {tx.status === 'Completed' && hasPermission(Permission.SALES_REFUND) && !tenantGuard.isReadOnly && (
+                            <button
+                              onClick={() => setReturnTransactionId(tx.id)}
+                              className="w-full text-left px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 flex items-center gap-3 transition-colors border-t border-slate-50 dark:border-slate-700 mt-1"
+                            >
+                              <span className="material-symbols-outlined text-lg">undo</span> Process Return
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </td>
                 </tr>

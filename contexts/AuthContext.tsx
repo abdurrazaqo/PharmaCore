@@ -124,6 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setError(null);
       setIsLoading(true);
+      setProfile(null);
       if (!supabase) throw new Error('Supabase client not initialized');
       
       // console.log('🔍 Fetching profile for user:', userId);
@@ -284,6 +285,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Users - full access within tenant
         Permission.USERS_VIEW,
+        Permission.USERS_CREATE,
         Permission.USERS_ADD,
         Permission.USERS_EDIT,
         Permission.USERS_DELETE,
@@ -298,7 +300,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         Permission.SALES_CREATE, Permission.SALES_VIEW_HISTORY, Permission.SALES_REFUND,
         Permission.CUSTOMER_VIEW, Permission.CUSTOMER_ADD, Permission.CUSTOMER_EDIT, Permission.CUSTOMER_DELETE,
         Permission.REPORTS_VIEW, Permission.REPORTS_EXPORT,
-        Permission.USERS_VIEW, Permission.USERS_ADD, Permission.USERS_EDIT, Permission.USERS_DELETE,
+        Permission.USERS_VIEW, Permission.USERS_CREATE, Permission.USERS_ADD, Permission.USERS_EDIT, Permission.USERS_DELETE,
       ],
       
       [UserRole.PHARMACIST]: [

@@ -163,7 +163,7 @@ serve(async (req) => {
              const html = renderTrialReminder({ 
                pharmacy_name: tenant.name, 
                days_remaining: daysRemaining, 
-               trial_ends_at: trialEnd.toLocaleDateString()
+               trial_ends_at: trialEnd.toLocaleDateString('en-GB')
              })
              await sendEmail(tenant.pharmacy_email, `Your PharmaCore trial ends in ${daysRemaining} day(s)`, html)
           }
@@ -210,7 +210,7 @@ serve(async (req) => {
             const html = renderRenewalReminder({
               pharmacy_name: tenant.name,
               days_remaining: daysRemaining,
-              subscription_expires_at: subEnd.toLocaleDateString(),
+              subscription_expires_at: subEnd.toLocaleDateString('en-GB'),
               plan: tenant.plan || 'basic',
               amount_due: getPrice(tenant.plan || 'basic', tenant.billing_cycle || 'monthly')
             })
@@ -242,7 +242,7 @@ serve(async (req) => {
         summary.entered_grace_period++
         await logAudit(tenant.id, 'subscription.entered_grace_period')
         if (tenant.pharmacy_email) {
-          const expiredDate = tenant.subscription_expires_at ? new Date(tenant.subscription_expires_at).toLocaleDateString() : 'recently'
+          const expiredDate = tenant.subscription_expires_at ? new Date(tenant.subscription_expires_at).toLocaleDateString('en-GB') : 'recently'
           const html = renderGracePeriodNotice({ pharmacy_name: tenant.name, expired_date: expiredDate })
           await sendEmail(tenant.pharmacy_email, '⚠️ Your PharmaCore subscription has expired', html)
         }

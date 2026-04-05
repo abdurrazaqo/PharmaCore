@@ -54,7 +54,7 @@ const SuperadminLayout: React.FC = () => {
         <div className="flex flex-col items-center gap-2 group">
           <Logo size="lg" className="brightness-0 invert drop-shadow-2xl transition-transform group-hover:scale-105 duration-500" />
           <div className="text-center mt-2">
-            <p className="text-[10px] uppercase tracking-[0.3em] font-black text-teal-200/80 leading-none">Platform Control</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-teal-200/80 leading-none">Platform Control</p>
           </div>
         </div>
       </div>
@@ -76,7 +76,7 @@ const SuperadminLayout: React.FC = () => {
               <span className="font-semibold text-sm tracking-wide">{item.label}</span>
             </div>
             {item.badge ? (
-              <span className="bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-lg min-w-[20px] text-center shadow-sm">
+              <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg min-w-[20px] text-center shadow-sm">
                 {item.badge}
               </span>
             ) : null}
@@ -91,7 +91,7 @@ const SuperadminLayout: React.FC = () => {
         >
           <div className="absolute inset-0 bg-red-500 opacity-0 group-hover/logout:opacity-10 transition-opacity"></div>
           <span className="material-symbols-outlined text-xl transition-transform group-hover/logout:-translate-x-1 group-hover/logout:text-red-300">logout</span>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Sign Out</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Sign Out</span>
         </button>
       </div>
     </div>
@@ -115,7 +115,7 @@ const SuperadminLayout: React.FC = () => {
           </button>
           <Logo size="sm" className="brightness-0 invert scale-90" />
           <div className="h-4 w-[1px] bg-white/20 mx-1"></div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-200">Platform Control</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-teal-200">Platform Control</p>
         </div>
         <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shadow-inner">
           <span className="material-symbols-outlined text-base opacity-70">person</span>
@@ -145,15 +145,15 @@ const SuperadminLayout: React.FC = () => {
       <main className="flex-1 flex flex-col relative">
         <header className="hidden lg:flex h-20 bg-white border-b border-slate-200 px-8 items-center justify-between z-10">
           <div className="flex items-center gap-4">
-            <h2 className="font-bold text-slate-800 text-lg uppercase tracking-widest">
+            <h2 className="font-semibold text-slate-800 text-lg uppercase tracking-widest">
               {navItems.find(item => location.pathname === item.path || (item.path !== '/superadmin' && location.pathname.startsWith(item.path)))?.label || 'Super Admin'}
             </h2>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-slate-900">{profile?.display_name || 'Administrator'}</p>
-              <p className="text-[10px] font-bold text-[#006C75] uppercase tracking-tighter">Authorized Session</p>
+              <p className="text-sm font-semibold text-slate-900">{profile?.display_name || 'Administrator'}</p>
+              <p className="text-[10px] font-semibold text-[#006C75] uppercase tracking-tighter">Authorized Session</p>
             </div>
             <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center border-2 border-slate-50 overflow-hidden">
               <span className="material-symbols-outlined text-slate-400">person</span>

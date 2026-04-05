@@ -214,17 +214,17 @@ const SubscriptionPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20 dark:bg-background-dark">
       
       {/* Expired Beta Widget */}
       {isExpiredGifted && (
-        <div className="p-8 rounded-3xl border-2 bg-amber-50 border-amber-200 text-amber-900 flex flex-col md:flex-row items-center justify-between text-left gap-8 shadow-xl shadow-amber-900/5">
+        <div className="p-8 rounded-3xl border-2 bg-amber-50 border-amber-200 text-amber-900 flex flex-col md:flex-row items-center justify-between text-left gap-8 shadow-xl shadow-amber-900/5 dark:bg-amber-900/10 dark:border-amber-800/50 dark:text-amber-200">
           <div className="flex-1">
              <div className="flex items-center gap-3 mb-2">
                 <span className="material-symbols-outlined text-4xl text-amber-500">stars</span>
-                <h3 className="text-3xl font-black">Your Beta Period Has Ended</h3>
+                <h3 className="text-3xl font-black text-amber-900 dark:text-amber-100">Your Beta Period Has Ended</h3>
              </div>
-             <p className="font-medium text-amber-800 text-base max-w-xl">
+             <p className="font-medium text-amber-800 text-base max-w-xl dark:text-amber-200/80">
                Thank you for participating in the PharmaCore beta! Your gifted access has now concluded. 
                Choose a plan below to keep your data and continue using your workspace.
              </p>
@@ -239,26 +239,26 @@ const SubscriptionPage: React.FC = () => {
       {isTrialing && !isExpiredGifted && (
         <div className={`p-8 rounded-3xl border-2 flex flex-col md:flex-row items-center gap-8 ${
           daysRemaining <= 3 
-            ? 'bg-red-50 border-red-200 text-red-800' 
-            : 'bg-white border-blue-100 shadow-xl shadow-blue-50 text-slate-800'
+            ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/10 dark:border-red-900/20 dark:text-red-300' 
+            : 'bg-white border-blue-100 shadow-xl shadow-blue-50 text-slate-800 dark:bg-surface-dark dark:border-blue-900/20 dark:text-slate-100 dark:shadow-none'
         }`}>
           <div className="flex-1">
              <div className="flex items-center gap-3 mb-2">
                 <span className={`material-symbols-outlined text-3xl ${daysRemaining <= 3 ? 'text-red-500' : 'text-blue-500'}`}>
                   {daysRemaining <= 3 ? 'warning' : 'timer'}
                 </span>
-                <h3 className="text-2xl font-black">Free Trial Status</h3>
+                <h3 className="text-2xl font-black text-slate-800 dark:text-white">Free Trial Status</h3>
              </div>
-             <p className={`font-medium ${daysRemaining <= 3 ? 'text-red-600' : 'text-slate-500'}`}>
+             <p className={`font-medium ${daysRemaining <= 3 ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'}`}>
                {daysRemaining <= 3 
                  ? "Subscribe now to keep your data and avoid interruption."
                  : "You're currently exploring PharmaCore on a free trial."}
              </p>
           </div>
           <div className="w-full md:w-auto flex flex-col items-center min-w-[200px]">
-             <span className={`text-6xl font-black ${daysRemaining <= 3 ? 'text-red-600' : 'text-blue-600'}`}>{daysRemaining}</span>
-             <span className="text-sm font-bold uppercase tracking-widest opacity-80 mt-1">Days Remaining</span>
-             <div className="w-full h-2 bg-slate-200 rounded-full mt-4 overflow-hidden">
+             <span className={`text-6xl font-black ${daysRemaining <= 3 ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>{daysRemaining}</span>
+             <span className="text-sm font-bold uppercase tracking-widest opacity-80 mt-1 dark:text-slate-400">Days Remaining</span>
+             <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full mt-4 overflow-hidden">
                <div 
                  className={`h-full rounded-full transition-all duration-1000 ${daysRemaining <= 3 ? 'bg-red-500' : 'bg-blue-500'}`} 
                  style={{ width: `${Math.min(100, Math.max(0, ((30 - daysRemaining) / 30) * 100))}%` }}
@@ -275,20 +275,20 @@ const SubscriptionPage: React.FC = () => {
 
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Subscription & Billing</h2>
-          <p className="text-sm text-slate-500">Manage your organization's subscription plan</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Subscription & Billing</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Manage your organization's subscription plan</p>
         </div>
         
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+        <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
           <button 
             onClick={() => setBillingCycle('monthly')}
-            className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-white text-[#006C75] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-white text-[#006C75] shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
           >
             Monthly
           </button>
           <button 
             onClick={() => setBillingCycle('annual')}
-            className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${billingCycle === 'annual' ? 'bg-white text-[#006C75] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${billingCycle === 'annual' ? 'bg-white text-[#006C75] shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
           >
             Annually (Save 20%)
           </button>
@@ -296,24 +296,24 @@ const SubscriptionPage: React.FC = () => {
       </div>
 
       {/* Current Subscription Card */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+      <div className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
         <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="p-4 bg-[#006C75]/10 text-[#006C75] rounded-xl">
+            <div className="p-4 bg-[#006C75]/10 text-[#006C75] dark:text-[#00bac6] rounded-xl">
               <span className="material-symbols-outlined text-3xl">workspace_premium</span>
             </div>
             <div>
                <div className="flex items-center gap-2 mb-1">
-                 <h3 className="text-2xl font-black capitalize text-slate-800">{currentPlan} Plan</h3>
+                 <h3 className="text-2xl font-black capitalize text-slate-800 dark:text-white">{currentPlan} Plan</h3>
                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                    currentStatus === 'active' ? 'bg-green-100 text-green-700' :
-                    currentStatus === 'trialing' ? 'bg-blue-100 text-blue-700' :
-                    currentStatus === 'grace_period' ? 'bg-orange-100 text-orange-700' :
-                    'bg-red-100 text-red-700'
+                    currentStatus === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                    currentStatus === 'trialing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                    currentStatus === 'grace_period' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                  }`}>{rawStatus}</span>
                </div>
-               <p className="text-sm text-slate-500">
-                 {isTrialing ? `Trial ends in ${daysRemaining} days` : `Renews in ${daysRemaining} days on ${expiryDate?.toLocaleDateString()}`}
+               <p className="text-sm text-slate-500 dark:text-slate-400">
+                 {isTrialing ? `Trial ends in ${daysRemaining} days` : `Renews in ${daysRemaining} days on ${expiryDate?.toLocaleDateString('en-GB')}`}
                </p>
             </div>
           </div>
@@ -330,7 +330,7 @@ const SubscriptionPage: React.FC = () => {
         </div>
         
         {subscription?.pending_plan && (
-          <div className="mt-4 p-3 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-100 flex items-center gap-2">
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-lg text-sm border border-blue-100 dark:border-blue-900/20 flex items-center gap-2">
             <span className="material-symbols-outlined">info</span>
             Your plan will automatically change to the <strong>{subscription.pending_plan}</strong> plan at the end of your billing cycle.
           </div>
@@ -344,8 +344,8 @@ const SubscriptionPage: React.FC = () => {
           const targetPrice = prices[planKey]?.[billingCycle] || 0;
           
           return (
-            <div key={planKey} className={`relative bg-white rounded-3xl border-2 transition-all flex flex-col mt-4 ${
-              isCurrent ? 'border-[#006C75] shadow-2xl shadow-[#006C75]/10 scale-100 z-10' : 'border-slate-100 hover:border-slate-200 opacity-90 hover:opacity-100'
+            <div key={planKey} className={`relative bg-white dark:bg-surface-dark rounded-3xl border-2 transition-all flex flex-col mt-4 ${
+              isCurrent ? 'border-[#006C75] shadow-2xl shadow-[#006C75]/10 scale-100 z-10 dark:shadow-none' : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 opacity-90 hover:opacity-100'
             }`}>
               {isCurrent && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#006C75] text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#006C75]/30">
@@ -354,24 +354,24 @@ const SubscriptionPage: React.FC = () => {
               )}
               
               <div className="p-8 flex-1">
-                <h3 className="text-2xl font-black capitalize mb-6 text-slate-800">{planKey}</h3>
+                <h3 className="text-2xl font-black capitalize mb-6 text-slate-800 dark:text-white">{planKey}</h3>
                 <div className="mb-8 min-h-[60px]">
                   {pricingLoading ? (
-                    <div className="h-10 w-32 bg-slate-100 animate-pulse rounded-lg"></div>
+                    <div className="h-10 w-32 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg"></div>
                   ) : planKey === 'enterprise' ? (
-                    <span className="text-4xl font-black text-slate-900">Custom</span>
+                    <span className="text-4xl font-black text-slate-900 dark:text-white">Custom</span>
                   ) : (
                     <>
-                      <span className="text-4xl font-black text-slate-900">₦{targetPrice.toLocaleString()}</span>
-                      <span className="text-slate-500 font-bold ml-1">/{billingCycle === 'annual' ? 'year' : 'mo'}</span>
+                      <span className="text-4xl font-black text-slate-900 dark:text-white">₦{targetPrice.toLocaleString()}</span>
+                      <span className="text-slate-500 dark:text-slate-400 font-bold ml-1">/{billingCycle === 'annual' ? 'year' : 'mo'}</span>
                     </>
                   )}
                 </div>
                 
                 <ul className="space-y-4 mb-8">
                   {PLAN_FEATURES[planKey].map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-slate-600 font-medium">
-                      <span className="material-symbols-outlined text-[#006C75] text-lg bg-[#006C75]/10 rounded-full w-6 h-6 flex items-center justify-center shrink-0">check</span>
+                    <li key={i} className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-400 font-medium">
+                      <span className="material-symbols-outlined text-[#006C75] dark:text-[#00dae6] text-lg bg-[#006C75]/10 rounded-full w-6 h-6 flex items-center justify-center shrink-0">check</span>
                       {feature}
                     </li>
                   ))}
@@ -384,8 +384,8 @@ const SubscriptionPage: React.FC = () => {
                    disabled={isCurrent || isProcessing}
                    className={`w-full py-4 rounded-xl font-bold transition-all ${
                      isCurrent 
-                       ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                       : 'bg-[#006C75] text-white hover:bg-[#005a62] shadow-xl shadow-[#006C75]/20'
+                       ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed' 
+                       : 'bg-[#006C75] text-white hover:bg-[#005a62] shadow-xl shadow-[#006C75]/20 dark:shadow-none'
                    }`}
                  >
                    {isCurrent ? 'Current Plan' : planKey === 'enterprise' ? 'Contact Sales' : `Select ${planKey.charAt(0).toUpperCase() + planKey.slice(1)}`}
@@ -397,9 +397,9 @@ const SubscriptionPage: React.FC = () => {
       </div>
 
       {/* Payment History Table */}
-      <div className="mt-16 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-         <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50">
-           <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+      <div className="mt-16 bg-white dark:bg-surface-dark rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+         <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+           <h3 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
              <span className="material-symbols-outlined text-slate-400">history</span>
              Payment History
            </h3>
@@ -416,15 +416,15 @@ const SubscriptionPage: React.FC = () => {
          ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-white">
+                <thead className="bg-white dark:bg-surface-dark">
                   <tr>
-                    <th className="py-4 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">Date</th>
-                    <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">Event</th>
-                    <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">Plan Details</th>
-                    <th className="py-4 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 text-right">Reference / User</th>
+                    <th className="py-4 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Date</th>
+                    <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Event</th>
+                    <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Plan Details</th>
+                    <th className="py-4 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-right">Reference / User</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {paymentHistory.map((log) => {
                     let displayEvent = log.action;
                     if (log.action === 'subscription.renewed') displayEvent = 'Subscription Renewed';
@@ -432,21 +432,21 @@ const SubscriptionPage: React.FC = () => {
                     if (log.action === 'subscription.trial_started') displayEvent = 'Trial Started';
 
                     return (
-                      <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                         <td className="py-5 px-8">
-                          <span className="text-sm font-bold text-slate-700">{new Date(log.created_at).toLocaleDateString()}</span>
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{new Date(log.created_at).toLocaleDateString('en-GB')}</span>
                         </td>
                         <td className="py-5 px-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#006C75]/10 text-[#006C75]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#006C75]"></span>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#006C75]/10 text-[#006C75] dark:text-[#00dae6]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#006C75] dark:bg-[#00dae6]"></span>
                             {displayEvent}
                           </span>
                         </td>
                         <td className="py-5 px-4">
-                           <span className="text-sm font-medium text-slate-500">-</span>
+                           <span className="text-sm font-medium text-slate-500 dark:text-slate-400">-</span>
                         </td>
                         <td className="py-5 px-8 text-right">
-                          <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded">{log.user_id ? log.user_id.split('-')[0] : 'System'}</span>
+                          <span className="text-xs font-mono text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded">{log.user_id ? log.user_id.split('-')[0] : 'System'}</span>
                         </td>
                       </tr>
                     )

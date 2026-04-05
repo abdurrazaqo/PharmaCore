@@ -64,24 +64,24 @@ export const DemoBanner: React.FC = () => {
 
   return (
     <div className="relative w-full bg-[#1a1a2e] text-white px-2 lg:px-4 py-2 border-b-2 border-orange-500 flex flex-col lg:flex-row items-center justify-between gap-2 lg:gap-3 text-sm z-[200]">
-      <div className="flex items-center gap-2 lg:gap-3 w-full lg:w-auto overflow-hidden">
+      <div className="flex items-center gap-2 lg:gap-3 w-full lg:w-auto">
         <div className="bg-orange-500/20 border border-orange-500/50 text-orange-400 px-2 lg:px-3 py-1 rounded-full text-[10px] lg:text-xs font-black tracking-widest uppercase flex items-center gap-1 lg:gap-1.5 shrink-0">
           <span className="material-symbols-outlined text-[12px] lg:text-[14px]">science</span>
           DEMO
         </div>
-        <p className="font-medium text-slate-300 truncate text-xs lg:text-sm">
+        <p className="font-semibold text-slate-200 text-xs lg:text-sm">
           Exploring demo environment
         </p>
       </div>
       
-      <div className="flex items-center gap-1.5 lg:gap-3 w-full lg:w-auto shrink-0 justify-end">
+      <div className="grid grid-cols-2 lg:flex items-center gap-2 lg:gap-3 w-full lg:w-auto shrink-0">
         
         {/* Role Switcher */}
-        <div className="relative">
+        <div className="relative w-full lg:w-auto">
           <button 
             onClick={() => setIsOpen(!isOpen)} 
             disabled={isSwitching}
-            className="flex items-center gap-1 lg:gap-2 bg-white/10 hover:bg-white/20 px-2 lg:px-4 py-1.5 rounded-lg border border-white/10 font-bold transition-colors disabled:opacity-50 text-[10px] lg:text-sm whitespace-nowrap"
+            className="w-full flex items-center justify-center lg:justify-start gap-1 lg:gap-2 bg-white/10 hover:bg-white/20 px-2 lg:px-4 py-2 rounded-lg border border-white/10 font-bold transition-colors disabled:opacity-50 text-[11px] lg:text-sm whitespace-nowrap"
           >
             <span className="hidden sm:inline">{isSwitching ? 'Switching...' : 'Try as Different Role'}</span>
             <span className="sm:hidden">{isSwitching ? 'Switching...' : 'Switch Role'}</span>
@@ -89,8 +89,8 @@ export const DemoBanner: React.FC = () => {
           </button>
 
           {isOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white text-slate-800 rounded-xl shadow-2xl py-2 overflow-hidden border border-slate-200">
-              <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 mb-1">
+            <div className="absolute left-0 lg:left-auto lg:right-0 top-full mt-2 w-full lg:w-48 bg-white text-slate-800 rounded-xl shadow-2xl py-2 overflow-hidden border border-slate-200 z-50">
+              <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 mb-1">
                 Currently: {currentRole.replace('_', ' ')}
               </div>
               {rolesDict.map((r) => (
@@ -114,7 +114,7 @@ export const DemoBanner: React.FC = () => {
           href="https://www.365health.online/products/pharmacore#pricing" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black px-3 lg:px-5 py-1.5 rounded-lg flex items-center gap-1 lg:gap-2 hover:opacity-90 transition-opacity text-[10px] lg:text-sm whitespace-nowrap"
+          className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black px-3 lg:px-5 py-2 rounded-lg flex items-center justify-center lg:justify-start gap-1 lg:gap-2 hover:opacity-90 transition-opacity text-[11px] lg:text-sm whitespace-nowrap"
         >
           <span className="hidden sm:inline">Get Started</span>
           <span className="sm:inline lg:hidden">Start</span>

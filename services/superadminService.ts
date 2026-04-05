@@ -207,16 +207,21 @@ export async function extendSubscription(tenantId: string, days: number) {
 export async function getTenants(filters: any = {}) {
   const DEMO_TENANT_ID = '00000000-0000-0000-0000-000000000001';
   
-  let query = supabase.from('tenants').select('*, users(count)').neq('id', DEMO_TENANT_ID);
+  let query = supabase.from('tenants').select('id, name, pharmacy_email, status, plan, is_gifted, subscription_expires_at, trial_ends_at').neq('id', DEMO_TENANT_ID);
   
-  if (filters.status && filters.status !== 'all') query = query.eq('status', filters.status);
+  if (filters.status === 'beta') {
+    query = query.eq('is_gifted', true);
+  } else if (filters.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
+  }
+  
   if (filters.plan && filters.plan !== 'all') query = query.eq('plan', filters.plan);
   if (filters.search) query = query.ilike('name', `%${filters.search}%`);
-  if (filters.is_gifted !== undefined) query = query.eq('is_gifted', filters.is_gifted);
+  if (filters.is_gifted !== undefined && filters.status !== 'beta') query = query.eq('is_gifted', filters.is_gifted);
   
   const { data, error } = await query.order('name');
   if (error) throw error;
-  return data;
+  return data || [];
 }
 
 export async function getAccessCodes(filters: any = {}) {

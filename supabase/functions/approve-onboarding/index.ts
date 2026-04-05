@@ -78,7 +78,7 @@ serve(async (req) => {
 
     if (tenantError) throw tenantError
 
-    // 4. Update Request
+    // 4. Update Request & Access Code
     const setupToken = crypto.randomUUID()
     await supabaseAdmin
       .from('onboarding_requests')
@@ -90,6 +90,17 @@ serve(async (req) => {
         reviewed_by: user.id
       })
       .eq('id', request_id)
+
+    // Mark access code as used
+    if (request.access_code) {
+      await supabaseAdmin
+        .from('access_codes')
+        .update({ 
+          status: 'used',
+          used_at: new Date().toISOString()
+        })
+        .eq('code', request.access_code)
+    }
 
     // 5. Send Email
     let emailSent = false
