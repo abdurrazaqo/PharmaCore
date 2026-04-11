@@ -24,7 +24,13 @@ const UserManagement: React.FC = () => {
 
   const [branches, setBranches] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newUserForm, setNewUserForm] = useState({
+  const [newUserForm, setNewUserForm] = useState<{
+    email: string;
+    password: string;
+    display_name: string;
+    role: UserRole;
+    branch_id: string;
+  }>({
     email: '',
     password: '',
     display_name: '',
@@ -638,11 +644,11 @@ const UserManagement: React.FC = () => {
                       {profile?.role === UserRole.TENANT_ADMIN && <option value={UserRole.TENANT_ADMIN}>Tenant Admin</option>}
                     </select>
                   </div>
-                  {newUserForm.role !== UserRole.TENANT_ADMIN && (
+                  {(newUserForm.role as UserRole) !== UserRole.TENANT_ADMIN && (
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
                       <select 
-                        required={newUserForm.role !== UserRole.TENANT_ADMIN && profile?.role === UserRole.TENANT_ADMIN} 
+                        required={(newUserForm.role as UserRole) !== UserRole.TENANT_ADMIN && profile?.role === UserRole.TENANT_ADMIN} 
                         value={newUserForm.branch_id} 
                         onChange={e => setNewUserForm({...newUserForm, branch_id: e.target.value})} 
                         className="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-primary outline-none transition-all"

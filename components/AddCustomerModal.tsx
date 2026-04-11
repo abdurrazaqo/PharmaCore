@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getNextCustomerId } from '../services/database';
 import { useToast } from './ToastContainer';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AddCustomerModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface AddCustomerModalProps {
 
 const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onClose, onAdd }) => {
   const { showToast } = useToast();
+  const { profile } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -41,9 +43,14 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onClose, on
     e.preventDefault();
     const initials = formData.name.split(' ').map(n => n[0]).join('').toUpperCase();
     
+    if (!profile?.tenant?.id) {
+      showToast('Tenant information not available', 'error');
+      return;
+    }
+    
     try {
       // Get next sequential customer ID
-      const customerId = await getNextCustomerId();
+      const customerId = await getNextCustomerId(profile.tenant.id);
       
       onAdd({
         id: customerId,

@@ -81,12 +81,7 @@ export const auditLog = {
 
     const { data, error } = await supabase
       .from('audit_logs')
-      .select(`
-        *,
-        user:user_id (
-          email:auth.users(email)
-        )
-      `)
+      .select('*')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
       .limit(limit);

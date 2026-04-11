@@ -322,6 +322,10 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ onClose }) => {
             setReturnTransactionId(null);
             loadTransactions(); // Reload transactions after return
           }}
+          onSuccess={() => {
+            setReturnTransactionId(null);
+            loadTransactions(); // Reload transactions after return
+          }}
         />
       )}
     </>

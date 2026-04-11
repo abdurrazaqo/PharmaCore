@@ -6,8 +6,7 @@ import {
   getCustomers, 
   addTransaction, 
   addSalesItems, 
-  getNextInvoiceId,
-  checkDatabase
+  getNextInvoiceId
 } from '../services/database';
 import { Product } from '../types';
 import PrintReceipt from './PrintReceipt';
@@ -20,7 +19,7 @@ import { useTenantGuard } from '../hooks/useTenantGuard';
 import ReadOnlyBadge from './ReadOnlyBadge';
 
 const POS: React.FC = () => {
-  const [cart, setCart] = useState<{ id: string, qty: number | string }[]>([]);
+  const [cart, setCart] = useState<{ id: string, qty: number }[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState({ name: 'Walk-in Customer', initials: 'WC', phone: 'N/A' });
   const [products, setProducts] = useState<Product[]>([]);
@@ -130,8 +129,7 @@ const POS: React.FC = () => {
 
   const subtotal = cart.reduce((acc, item) => {
     const prod = products.find(p => p.id === item.id);
-    const qty = typeof item.qty === 'string' && item.qty === '' ? 0 : Number(item.qty);
-    return acc + (prod?.price || 0) * qty;
+    return acc + (prod?.price || 0) * item.qty;
   }, 0);
 
   const discount = subtotal * (discountPercent / 100);
@@ -179,13 +177,13 @@ const POS: React.FC = () => {
       const existing = prev.find(item => item.id === id);
       if (existing) {
         if (newQty === '') {
-           return prev.map(item => item.id === id ? { ...item, qty: '' as any } : item);
+           // Temporarily allow empty string during typing, will be fixed on blur
+           return prev;
         }
         
         let parsedQty = typeof newQty === 'string' ? parseInt(newQty) : newQty;
-        if (isNaN(parsedQty)) return prev;
+        if (isNaN(parsedQty) || parsedQty < 1) parsedQty = 1;
         
-        // Don't cap at 1 while typing (allows 0 temporarily if needed, but we'll enforce 1 on blur)
         if (parsedQty > product.totalUnits) {
           showToast(`Only ${product.totalUnits} available in stock.`, 'warning');
           parsedQty = product.totalUnits;
@@ -210,7 +208,7 @@ const POS: React.FC = () => {
     }
 
     // Validate quantities
-    const hasInvalidQty = cart.some(item => item.qty === '' || Number(item.qty) < 1);
+    const hasInvalidQty = cart.some(item => item.qty < 1);
     if (hasInvalidQty) {
       showToast('Please enter valid quantities for all items in the cart.', 'error');
       return;
@@ -716,14 +714,14 @@ const POS: React.FC = () => {
                           type="text"
                           inputMode="numeric"
                           pattern="[0-9]*"
-                          value={item.qty === '' as any ? '' : item.qty}
+                          value={item.qty}
                           onChange={(e) => {
                             // Only allow numeric input
                             const val = e.target.value.replace(/[^0-9]/g, '');
-                            setItemQty(item.id, val);
+                            if (val) setItemQty(item.id, val);
                           }}
                           onBlur={() => {
-                            if (item.qty === '' as any || Number(item.qty) < 1) setItemQty(item.id, 1);
+                            if (item.qty < 1) setItemQty(item.id, 1);
                           }}
                           className="w-8 h-6 shrink-0 text-center text-[11px] font-bold text-slate-800 dark:text-white bg-transparent border-none focus:ring-1 focus:ring-primary/50 focus:bg-slate-100 dark:focus:bg-slate-800 rounded p-0 outline-none"
                         />

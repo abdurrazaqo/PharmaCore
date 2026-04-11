@@ -77,7 +77,6 @@ const AuthContext = createContext<AuthContextType>({
   canEdit: () => false,
   canDelete: () => false,
   canManageUsers: () => false,
-  canViewReports: () => false,
   canExport: () => false,
   canVerifyOffline: () => false,
   refreshProfile: async () => {},
@@ -339,12 +338,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return hasPermission(Permission.USERS_VIEW);
   };
 
-  const canViewReports = (): boolean => {
-    return hasPermission(Permission.REPORTS_VIEW);
-  };
-
   const canExport = (): boolean => {
     return hasPermission(Permission.REPORTS_EXPORT) || hasPermission(Permission.INVENTORY_EXPORT);
+  };
+
+  const canVerifyOffline = (): boolean => {
+    return profile?.role === UserRole.SUPERADMIN || profile?.role === UserRole.TENANT_ADMIN || profile?.role === UserRole.BRANCH_ADMIN;
   };
 
   return (
@@ -365,8 +364,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       canEdit,
       canDelete,
       canManageUsers,
-      canViewReports,
       canExport,
+      canVerifyOffline,
       refreshProfile,
     }}>
       {children}

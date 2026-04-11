@@ -48,6 +48,8 @@ export interface UserProfile {
     is_gifted?: boolean;
     gifted_until?: string | null;
     onboarding_completed?: boolean;
+    is_demo?: boolean;
+    phone?: string;
   };
   branch?: {
     id: string;
