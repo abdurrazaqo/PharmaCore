@@ -88,7 +88,7 @@ const Login: React.FC = () => {
                 htmlFor="username" 
                 className="absolute left-10 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 text-sm sm:text-base transition-all duration-200 pointer-events-none peer-focus:top-2.5 peer-focus:text-xs peer-focus:text-primary peer-[:not(:placeholder-shown)]:top-2.5 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-slate-600 dark:peer-[:not(:placeholder-shown)]:text-slate-400"
               >
-                Username
+                Email
               </label>
             </div>
 

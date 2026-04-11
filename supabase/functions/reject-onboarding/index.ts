@@ -60,15 +60,21 @@ serve(async (req) => {
           to: [request.pharmacy_email],
           subject: "Update on Your PharmaCore Application",
           html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px;">
-              <h1 style="color: #64748b; margin-bottom: 24px;">Application Status Update</h1>
-              <p>Thank you for your interest in PharmaCore. After careful review, we are unable to approve your application for <strong>${request.pharmacy_name}</strong> at this time.</p>
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 24px; border-radius: 12px; margin: 30px 0;">
-                <p style="margin-bottom: 8px; font-weight: bold; color: #475569;">Reason for rejection:</p>
-                <p style="color: #64748b; font-style: italic;">${rejection_reason}</p>
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+              <div style="background-color: #006C75; height: 5px; font-size: 0; line-height: 0;">&nbsp;</div>
+              <div style="padding: 32px 40px; text-align: center;">
+                <img src="https://pharmacore.365health.online/images/preview%20image.png" alt="PharmaCore by 365Health" width="280" style="max-width: 280px; height: auto;">
               </div>
-              <p>If you have any questions or would like to discuss this further, please don't hesitate to reach out to us at <a href="mailto:hello@365health.online">hello@365health.online</a>.</p>
-              <p>Best regards,<br>The PharmaCore Onboarding Team</p>
+              <div style="padding: 0 30px 30px;">
+                <h1 style="color: #64748b; margin-bottom: 24px;">Application Status Update</h1>
+                <p>Thank you for your interest in PharmaCore. After careful review, we are unable to approve your application for <strong>${request.pharmacy_name}</strong> at this time.</p>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 24px; border-radius: 12px; margin: 30px 0;">
+                  <p style="margin-bottom: 8px; font-weight: bold; color: #475569;">Reason for rejection:</p>
+                  <p style="color: #64748b; font-style: italic;">${rejection_reason}</p>
+                </div>
+                <p>If you have any questions or would like to discuss this further, please don't hesitate to reach out to us at <a href="mailto:hello@365health.online">hello@365health.online</a>.</p>
+                <p style="margin-top: 30px; font-size: 14px; color: #94a3b8; text-align: center;">Best regards,<br>The PharmaCore Onboarding Team</p>
+              </div>
             </div>
           `
         })

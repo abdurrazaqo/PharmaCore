@@ -29,9 +29,10 @@ const buildEmailWrapper = (content: string) => `
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     }
     .header {
-      background-color: #006C75;
+      background-color: #ffffff;
       padding: 32px 24px;
       text-align: center;
+      border-top: 5px solid #006C75;
     }
     .header h1 {
       color: #ffffff;
@@ -92,7 +93,7 @@ const buildEmailWrapper = (content: string) => `
 <body>
   <div class="wrapper">
     <div class="header">
-      <h1>PharmaCore</h1>
+      <img src="https://pharmacore.365health.online/images/preview%20image.png" alt="PharmaCore" width="240" style="max-width: 240px; height: auto; display: block; margin: 0 auto;">
     </div>
     <div class="content">
       ${content}

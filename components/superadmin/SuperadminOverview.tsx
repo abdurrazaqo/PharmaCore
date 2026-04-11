@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getPlatformMetrics, getOnboardingRequests, PlatformMetrics, OnboardingRequest, generateBetaInvite } from '../../services/superadminService';
+import { getPlatformMetrics, getOnboardingRequests, PlatformMetrics, OnboardingRequest, sendBetaInvitation } from '../../services/superadminService';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../ToastContainer';
 
@@ -8,8 +8,11 @@ const SuperadminOverview: React.FC = () => {
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
   const [recentRequests, setRecentRequests] = useState<OnboardingRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'pro'>('pro');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,7 +38,7 @@ const SuperadminOverview: React.FC = () => {
   if (isLoading) {
     return (
       <div className="space-y-8 animate-pulse">
-      <div className="grid grid-cols-3 xl:grid-cols-6 gap-4 md:gap-6">
+        <div className="grid grid-cols-3 xl:grid-cols-6 gap-4 md:gap-6">
           {[1, 2, 3, 4, 5, 6].map(i => (
             <div key={i} className="h-24 md:h-32 bg-white rounded-2xl md:rounded-3xl border border-slate-100"></div>
           ))}
@@ -48,10 +51,10 @@ const SuperadminOverview: React.FC = () => {
   const metricCards = [
     { label: 'Total Pharmacies', value: metrics?.totalPharmacies, icon: 'domain', color: 'bg-blue-50 text-blue-600' },
     { label: 'Active', value: metrics?.activePharmacies, icon: 'check_circle', color: 'bg-emerald-50 text-emerald-600' },
-    { 
-      label: 'Pending Approvals', 
-      value: metrics?.pendingApprovals, 
-      icon: 'pending', 
+    {
+      label: 'Pending Approvals',
+      value: metrics?.pendingApprovals,
+      icon: 'pending',
       color: metrics?.pendingApprovals && metrics.pendingApprovals > 0 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-400',
       highlight: metrics?.pendingApprovals && metrics.pendingApprovals > 0
     },
@@ -68,29 +71,12 @@ const SuperadminOverview: React.FC = () => {
           <h2 className="text-xl font-semibold text-slate-800">Platform Overview</h2>
           <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-widest">Real-time metrics & recent activity</p>
         </div>
-        <button 
-          onClick={async () => {
-            setIsGenerating(true);
-            try {
-              const link = await generateBetaInvite();
-              setGeneratedLink(link);
-              loadData();
-            } catch (err) {
-              console.error('Failed to generate invite:', err);
-              showToast('Failed to generate invite. Please check console for details.', 'error');
-            } finally {
-              setIsGenerating(false);
-            }
-          }}
-          disabled={isGenerating}
-          className="bg-[#006C75] text-white px-6 py-3 rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-teal-500/20 hover:bg-[#005a61] hover:-translate-y-0.5 transition-all disabled:opacity-50"
+        <button
+          onClick={() => setShowInviteModal(true)}
+          className="bg-[#006C75] text-white px-6 py-3 rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-teal-500/20 hover:bg-[#005a61] hover:-translate-y-0.5 transition-all"
         >
-          {isGenerating ? (
-            <span className="material-symbols-outlined text-xl animate-spin">progress_activity</span>
-          ) : (
-            <span className="material-symbols-outlined text-xl">add_link</span>
-          )}
-          Generate Beta Invite
+          <span className="material-symbols-outlined text-xl">mail</span>
+          Send Beta Invitation
         </button>
       </div>
 
@@ -137,10 +123,10 @@ const SuperadminOverview: React.FC = () => {
                         <p className="text-[10px] text-slate-400 font-medium">{req.contact_person_name}</p>
                       </td>
                       <td className="py-4 px-6">
-                         <span className="bg-teal-50 text-[#006C75] text-[10px] font-bold px-2 py-1 rounded-lg border border-teal-100">PHC-{req.access_code.slice(-4)}</span>
+                        <span className="bg-teal-50 text-[#006C75] text-[10px] font-bold px-2 py-1 rounded-lg border border-teal-100">PHC-{req.access_code.slice(-4)}</span>
                       </td>
                       <td className="py-4 px-6 text-right">
-                        <button 
+                        <button
                           onClick={() => navigate('/superadmin/pending')}
                           className="bg-white border border-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl group-hover:bg-[#006C75] group-hover:border-[#006C75] group-hover:text-white transition-all shadow-sm"
                         >
@@ -173,50 +159,132 @@ const SuperadminOverview: React.FC = () => {
             <button onClick={() => navigate('/superadmin/audit-logs')} className="text-xs font-semibold text-[#006C75] hover:underline">Full Logs &rarr;</button>
           </div>
           <div className="flex-1 p-12 text-center bg-slate-50/20">
-             <span className="material-symbols-outlined text-5xl text-slate-200 mb-4">history</span>
-             <p className="text-sm text-slate-400 italic">Audit log stream loading...</p>
+            <span className="material-symbols-outlined text-5xl text-slate-200 mb-4">history</span>
+            <p className="text-sm text-slate-400 italic">Audit log stream loading...</p>
           </div>
         </div>
       </div>
 
-      {/* Generated Link Modal */}
-      {generatedLink && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative border border-slate-100 animate-in fade-in zoom-in duration-200">
-            <button 
-              onClick={() => setGeneratedLink(null)}
+      {/* Beta Invitation Modal */}
+      {showInviteModal && (
+        <div className="modal-overlay bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="modal-content bg-white dark:bg-surface-dark rounded-[32px] p-8 max-w-md w-full shadow-2xl relative border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => {
+                setShowInviteModal(false);
+                setRecipientName('');
+                setRecipientEmail('');
+              }}
               className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
-            
+
             <div className="w-16 h-16 bg-teal-50 text-[#006C75] rounded-2xl flex items-center justify-center mb-6 border border-teal-100/50 shadow-inner">
-              <span className="material-symbols-outlined text-3xl">link</span>
+              <span className="material-symbols-outlined text-3xl">mark_email_read</span>
             </div>
-            
-            <h3 className="text-xl font-semibold text-slate-800 mb-2">Beta Invite Generated!</h3>
+
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">Send Beta Invitation</h3>
             <p className="text-sm text-slate-500 mb-6 font-medium">
-              Share this unique link to allow a new tenant to bypass payment and start a beta trial immediately. This link expires in 30 days.
+              This will send a personalized email with a 3-month free access code to the recipient.
             </p>
-            
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center gap-3 relative group">
-              <div className="flex-1 overflow-x-auto custom-scrollbar pb-1">
-                 <code className="text-sm text-slate-600 font-mono whitespace-nowrap pl-2 select-all break-all">{generatedLink}</code>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (isSending) return;
+
+              setIsSending(true);
+              try {
+                await sendBetaInvitation(recipientName, recipientEmail, selectedPlan);
+                showToast(`Beta invite sent to ${recipientName}.`, 'success');
+                setShowInviteModal(false);
+                setRecipientName('');
+                setRecipientEmail('');
+                setSelectedPlan('pro');
+                loadData();
+              } catch (err) {
+                console.error('Failed to send invite:', err);
+                showToast('Failed to send invite. Please try again.', 'error');
+              } finally {
+                setIsSending(false);
+              }
+            }} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Recipient Name</label>
+                <input
+                  required
+                  type="text"
+                  placeholder="e.g. Pharm. Abdurrazaq"
+                  className="w-full bg-slate-50 border-none rounded-2xl py-3.5 px-4 text-sm focus:ring-2 focus:ring-[#006C75]/20"
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                />
               </div>
-              <button 
-                onClick={() => {
-                  navigator.clipboard.writeText(generatedLink);
-                  showToast('Copied to clipboard!', 'success');
-                }}
-                className="w-12 h-12 bg-white border border-slate-200 text-[#006C75] rounded-xl flex items-center justify-center shadow-sm hover:border-[#006C75] hover:bg-teal-50 hover:-translate-y-0.5 transition-all active:scale-95 shrink-0"
-                title="Copy Link"
-              >
-                <span className="material-symbols-outlined text-xl">content_copy</span>
-              </button>
-            </div>
-            <div className="mt-6 flex justify-end">
-               <button onClick={() => setGeneratedLink(null)} className="text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-widest px-4 py-2 hover:bg-slate-50 rounded-xl">Close</button>
-            </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Recipient Email</label>
+                <input
+                  required
+                  type="email"
+                  placeholder="email@pharmacy.com"
+                  className="w-full bg-slate-50 border-none rounded-2xl py-3.5 px-4 text-sm focus:ring-2 focus:ring-[#006C75]/20"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Proposed Plan</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlan('basic')}
+                    className={`flex items-center justify-center gap-2 py-3 rounded-2xl border-2 transition-all ${selectedPlan === 'basic'
+                      ? 'border-[#006C75] bg-teal-50 text-[#006C75]'
+                      : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
+                      }`}
+                  >
+                    <span className="material-symbols-outlined text-lg">{selectedPlan === 'basic' ? 'radio_button_checked' : 'radio_button_unchecked'}</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Basic</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlan('pro')}
+                    className={`flex items-center justify-center gap-2 py-3 rounded-2xl border-2 transition-all ${selectedPlan === 'pro'
+                      ? 'border-[#006C75] bg-teal-50 text-[#006C75]'
+                      : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
+                      }`}
+                  >
+                    <span className="material-symbols-outlined text-lg">{selectedPlan === 'pro' ? 'radio_button_checked' : 'radio_button_unchecked'}</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Pro</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="flex-1 px-6 py-3.5 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSending}
+                  className="flex-1 bg-[#006C75] text-white px-6 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-teal-500/20 hover:bg-[#005a61] hover:-translate-y-0.5 transition-all disabled:opacity-50 uppercase tracking-widest text-[10px]"
+                >
+                  {isSending ? (
+                    <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+                  ) : (
+                    <>
+                      <span>Send Invite</span>
+                      <span className="material-symbols-outlined text-lg">send</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

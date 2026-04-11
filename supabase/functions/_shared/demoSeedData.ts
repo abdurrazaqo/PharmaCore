@@ -171,8 +171,10 @@ export function generateSeedData() {
   const transactions = [];
   const salesItems = [];
 
-  // Generate transactions over the last 30 days
+  // Generate transactions over the last 30 days (always relative to NOW)
   let txCount = 0;
+  const now = new Date(); // Always use current date/time
+  
   for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
     // More transactions for "today" and recent days
     let transactionsPerDay;
@@ -182,8 +184,8 @@ export function generateSeedData() {
 
     for (let j = 0; j < transactionsPerDay; j++) {
       txCount++;
-      const txDate = new Date();
-      txDate.setDate(txDate.getDate() - dayOffset);
+      const txDate = new Date(now); // Create from current time
+      txDate.setDate(now.getDate() - dayOffset);
       txDate.setHours(8 + Math.floor(Math.random() * 12)); // 8AM to 8PM
       txDate.setMinutes(Math.floor(Math.random() * 60));
 

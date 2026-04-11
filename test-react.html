@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>React Test</title>
+</head>
+<body>
+    <div id="root">If you see this, React hasn't loaded</div>
+    <script type="module">
+        console.log('Script loading...');
+        import React from 'react';
+        import ReactDOM from 'react-dom/client';
+        
+        console.log('React imported:', React);
+        console.log('ReactDOM imported:', ReactDOM);
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement('h1', null, 'React is working!'));
+    </script>
+</body>
+</html>

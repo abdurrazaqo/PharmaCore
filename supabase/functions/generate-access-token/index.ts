@@ -188,11 +188,12 @@ serve(async (req) => {
     })
 
     const emailTemplate = `
-      <div style="background-color: white; max-width: 600px; margin: 0 auto; font-family: 'Inter', Helvetica, Arial, sans-serif; color: #334155;">
-        <div style="background-color: #006C75; padding: 20px; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 20px;">PharmaCore by 365Health</h1>
+      <div style="background-color: white; max-width: 600px; margin: 0 auto; font-family: 'Inter', Helvetica, Arial, sans-serif; color: #334155; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 16px;">
+        <div style="background-color: #006C75; height: 5px; font-size: 0; line-height: 0;">&nbsp;</div>
+        <div style="padding: 32px 40px; text-align: center;">
+          <img src="https://pharmacore.365health.online/images/preview%20image.png" alt="PharmaCore by 365Health" width="280" style="max-width: 280px; height: auto;">
         </div>
-        <div style="padding: 32px;">
+        <div style="padding: 0 32px 32px;">
           <h2 style="font-size: 24px; font-weight: 700; color: #0f172a; margin-top: 0;">Hi ${buyer_name},</h2>
           <p style="font-size: 16px; line-height: 1.6; color: #475569;">
             Thank you for your payment. Your PharmaCore access details are below. Use this code to complete your pharmacy setup.
@@ -229,7 +230,7 @@ serve(async (req) => {
         </div>
         <div style="background-color: #f1f5f9; padding: 24px; text-align: center; font-size: 12px; color: #64748b;">
           <p style="margin: 0 0 8px 0;">Questions? Contact us at <a href="mailto:hello@365health.online" style="color: #006C75; text-decoration: none;">hello@365health.online</a></p>
-          <p style="margin: 0;">&copy; 2025 365Health Systems Ltd. Lagos, Nigeria.</p>
+          <p style="margin: 0;">&copy; 2025 365Health Systems Ltd. Kano, Nigeria.</p>
         </div>
       </div>
     `

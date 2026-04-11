@@ -7,6 +7,7 @@ import { Page } from '../types';
 import Logo from './Logo';
 import ChangePasswordModal from './ChangePasswordModal';
 import { DemoBanner } from './DemoBanner';
+import { SyncStatusBar } from '../src/components/SyncStatusBar';
 
 interface LayoutProps {
   isAiOpen?: boolean;
@@ -143,7 +144,8 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
   ];
 
   return (
-    <div className="flex flex-col h-screen lg:overflow-hidden">
+    <div className="flex flex-col h-screen lg:overflow-hidden font-inter">
+      <SyncStatusBar />
       {tenantGuard.isDemo && <DemoBanner />}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0 bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300 overflow-y-auto lg:overflow-hidden">
         {/* Desktop Sidebar - Hidden on Mobile */}

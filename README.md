@@ -32,6 +32,7 @@ VITE_GEMINI_API_KEY=your_gemini_api_key
 # Supabase (required for database functionality)
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
 ### 3. Setup Database
@@ -39,12 +40,19 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 2. Run the SQL schema in Supabase SQL Editor (see DATABASE_INTEGRATION.md)
 3. Add your Supabase credentials to `.env.local`
 
-### 4. Start Development Server
+### 4. Seed Demo Data (Optional)
+To populate the demo tenant with sample data:
+```bash
+npm run seed-demo
+```
+Note: For production, set up automated daily resets (see DEMO_DATA_SETUP.md)
+
+### 5. Start Development Server
 ```bash
 npm run dev
 ```
 
-### 5. Build for Production
+### 6. Build for Production
 ```bash
 npm run build
 npm run preview

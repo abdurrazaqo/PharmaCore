@@ -113,8 +113,13 @@ serve(async (req) => {
           to: [request.pharmacy_email],
           subject: "Your PharmaCore Application is Approved! 🎉",
           html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px;">
-              <h1 style="color: #006C75; margin-bottom: 24px;">Congratulations!</h1>
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+              <div style="background-color: #006C75; height: 5px; font-size: 0; line-height: 0;">&nbsp;</div>
+              <div style="padding: 32px 40px; text-align: center;">
+                <img src="https://pharmacore.365health.online/images/preview%20image.png" alt="PharmaCore by 365Health" width="280" style="max-width: 280px; height: auto;">
+              </div>
+              <div style="padding: 0 30px 30px;">
+                <h1 style="color: #0f172a; font-size: 24px; margin-bottom: 24px;">Congratulations!</h1>
               <p>Your application for <strong>${request.pharmacy_name}</strong> has been approved. You're just one step away from launching your digital pharmacy.</p>
               <div style="background: #f0fdfa; border: 1px solid #ccfbf1; padding: 24px; border-radius: 12px; margin: 30px 0; text-align: center;">
                 <p style="margin-bottom: 20px; font-weight: bold;">Click the button below to complete your account setup:</p>
@@ -124,6 +129,7 @@ serve(async (req) => {
               <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
               <p style="font-size: 14px; color: #94a3b8; text-align: center;">PharmaCore Support: hello@365health.online</p>
             </div>
+          </div>
           `
         })
       })

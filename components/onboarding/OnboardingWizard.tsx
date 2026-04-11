@@ -249,11 +249,12 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col justify-center items-center p-6 min-h-[calc(100vh-80px)]">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col justify-start items-center p-6 pt-20 sm:pt-24 pb-20 min-h-0">
         
         {/* Step 1: Welcome */}
         {currentStep === 1 && (
-          <div className="max-w-lg w-full text-center animate-in slide-in-from-bottom-4 duration-500 fade-in">
+          <div className="max-w-lg w-full text-center my-auto animate-in slide-in-from-bottom-4 duration-500 fade-in">
             <div className="w-24 h-24 bg-[#006C75]/10 rounded-full flex flex-col items-center justify-center mx-auto mb-8 relative">
               <span className="material-symbols-outlined text-5xl text-[#006C75]">waving_hand</span>
             </div>
@@ -473,7 +474,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
         {/* Step 5: You're Ready */}
         {currentStep === 5 && (
-          <div className="max-w-lg w-full text-center animate-in zoom-in-95 duration-500 fade-in">
+          <div className="max-w-lg w-full text-center my-auto animate-in zoom-in-95 duration-500 fade-in">
             <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-8 relative">
               <span className="material-symbols-outlined text-5xl text-emerald-600">rocket_launch</span>
               <div className="absolute inset-0 rounded-full animate-ping bg-emerald-100 opacity-50 -z-10"></div>

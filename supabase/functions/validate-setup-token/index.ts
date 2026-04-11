@@ -28,7 +28,7 @@ serve(async (req) => {
 
     if (!token) {
       return new Response(JSON.stringify({ valid: false, error: "Setup token is required" }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -40,19 +40,19 @@ serve(async (req) => {
 
     if (error || !request) {
       return new Response(JSON.stringify({ valid: false, error: "Invalid or expired setup link" }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
     if (request.setup_token_used_at) {
       return new Response(JSON.stringify({ valid: false, error: "This setup link has already been used" }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
     if (request.status !== 'approved') {
       return new Response(JSON.stringify({ valid: false, error: "This application has not been approved yet" }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -71,7 +71,7 @@ serve(async (req) => {
 
   } catch (err: any) {
     return new Response(JSON.stringify({ valid: false, error: err.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })

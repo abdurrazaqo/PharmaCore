@@ -74,21 +74,27 @@ serve(async (req) => {
       // Send Reminder
       if (tenant.pharmacy_email) {
         const html = `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px;">
-            <h1 style="color: #d97706; margin-bottom: 24px;">Beta Period Ending Soon</h1>
-            <p>Hi there,</p>
-            <p>Your gifted beta access to PharmaCore for <strong>${tenant.name}</strong> will conclude in exactly <strong>7 days</strong>.</p>
-            <p>We hope you've enjoyed the platform! We would love to keep you on board. Please choose a subscription plan to retain your data and ensure uninterrupted access to your workspace.</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-               <a href="https://pharmacore.365health.online/subscription" style="background: #006C75; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View Plans & Subscribe</a>
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+              <div style="background-color: #006C75; height: 5px; font-size: 0; line-height: 0;">&nbsp;</div>
+              <div style="padding: 32px 40px; text-align: center;">
+                <img src="https://pharmacore.365health.online/images/preview%20image.png" alt="PharmaCore by 365Health" width="280" style="max-width: 280px; height: auto;">
+              </div>
+              <div style="padding: 0 30px 30px;">
+                <h1 style="color: #d97706; margin-bottom: 24px;">Beta Period Ending Soon</h1>
+                <p>Hi there,</p>
+                <p>Your gifted beta access to PharmaCore for <strong>${tenant.name}</strong> will conclude in exactly <strong>7 days</strong>.</p>
+                <p>We hope you've enjoyed the platform! We would love to keep you on board. Please choose a subscription plan to retain your data and ensure uninterrupted access to your workspace.</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                   <a href="https://pharmacore.365health.online/subscription" style="background: #006C75; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View Plans & Subscribe</a>
+                </div>
+                
+                <p style="font-size: 14px; color: #64748b;">If you need assistance, simply reply to this email.</p>
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+                <p style="font-size: 14px; color: #94a3b8; text-align: center;">PharmaCore Support: hello@365health.online</p>
+              </div>
             </div>
-            
-            <p style="font-size: 14px; color: #64748b;">If you need assistance, simply reply to this email.</p>
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-            <p style="font-size: 14px; color: #94a3b8; text-align: center;">PharmaCore Support: hello@365health.online</p>
-          </div>
-        `
+          `
         await sendEmail(tenant.pharmacy_email, "⚠️ Your PharmaCore beta ends in 7 days", html)
         emailsSent++
       }

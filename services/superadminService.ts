@@ -28,23 +28,34 @@ export interface OnboardingRequest {
 // Fetch platform overview metrics
 export async function getPlatformMetrics(): Promise<PlatformMetrics> {
   const DEMO_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+  const now = new Date().toISOString();
   
   // Using multiple queries for precision, excluding demo tenant
   const [
     { count: total }, 
     { count: active }, 
     { count: pending },
-    { count: trial },
+    { data: trialTenants },
     { count: grace },
     { data: revenueData }
   ] = await Promise.all([
     supabase.from('tenants').select('*', { count: 'exact', head: true }).neq('status', 'deleted').neq('id', DEMO_TENANT_ID),
     supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'active').neq('id', DEMO_TENANT_ID),
     supabase.from('onboarding_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabase.from('tenants').select('*', { count: 'exact', head: true }).gt('trial_ends_at', new Date().toISOString()).neq('id', DEMO_TENANT_ID),
+    supabase.from('tenants').select('id, trial_ends_at, subscription_expires_at').neq('id', DEMO_TENANT_ID).neq('status', 'deleted'),
     supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'grace_period').neq('id', DEMO_TENANT_ID),
     supabase.from('access_codes').select('amount_paid').eq('status', 'used')
   ]);
+
+  // Count tenants in trial: trial_ends_at > now AND (subscription_expires_at is null OR subscription_expires_at <= now)
+  const inTrial = trialTenants?.filter(t => {
+    const trialEndsAt = t.trial_ends_at ? new Date(t.trial_ends_at) : null;
+    const subscriptionExpiresAt = t.subscription_expires_at ? new Date(t.subscription_expires_at) : null;
+    const nowDate = new Date(now);
+    
+    // In trial if: trial hasn't ended AND (no subscription OR subscription has expired)
+    return trialEndsAt && trialEndsAt > nowDate && (!subscriptionExpiresAt || subscriptionExpiresAt <= nowDate);
+  }).length || 0;
 
   const totalRevenue = revenueData?.reduce((sum, item) => sum + Number(item.amount_paid), 0) || 0;
 
@@ -52,7 +63,7 @@ export async function getPlatformMetrics(): Promise<PlatformMetrics> {
     totalPharmacies: total || 0,
     activePharmacies: active || 0,
     pendingApprovals: pending || 0,
-    inTrial: trial || 0,
+    inTrial,
     inGracePeriod: grace || 0,
     totalRevenue
   };
@@ -302,3 +313,26 @@ export async function generateBetaInvite(): Promise<string> {
 
   return `${window.location.origin}/onboard?token=${token}`;
 }
+
+export async function sendBetaInvitation(recipientName: string, recipientEmail: string, plan: 'basic' | 'pro' = 'pro') {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("No active session");
+
+  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-beta-invitation`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify({
+      recipient_name: recipientName,
+      recipient_email: recipientEmail,
+      plan: plan
+    })
+  });
+
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Failed to send invitation");
+  return result;
+}
+

@@ -1,87 +1,105 @@
-
-import { GoogleGenAI } from "@google/genai";
+import { supabase } from './supabaseClient';
 
 export async function* getMedicalAssistanceStream(prompt: string) {
   try {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-
-    if (!apiKey) {
-      console.error('Gemini API key not found. Please add VITE_GEMINI_API_KEY to .env.local');
-      yield 'API key not configured. Please contact your administrator.';
+    if (!prompt || prompt.trim() === '') {
+      yield 'Please enter a drug name or question.';
       return;
     }
 
-    // console.log('Initializing Gemini AI with key:', apiKey.substring(0, 10) + '...');
-    const genAI = new GoogleGenAI({ apiKey });
-
-    // console.log('Generating content stream...');
-    const resultStream = await genAI.models.generateContentStream({
-      model: 'gemini-2.0-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: `You are PharmaCore Assistant, a highly specialized tool for pharmacists. 
-Focus on: 
-1. Drug-drug interaction safety.
-2. Pediatric and geriatric dosage guidance.
-
-Always use markdown formatting (headers with #, bold with **, bullet points with *) for clarity.
-Include a mandatory professional disclaimer that this tool does not replace professional medical judgment or doctor consultation.
-
-User Query: ${prompt}`
-            }
-          ]
-        }
-      ],
-      config: {
-        temperature: 0.5,
-        maxOutputTokens: 2048,
-      }
-    });
-
-    // console.log('Streaming response...');
-    for await (const chunk of resultStream) {
-      const text = chunk.text;
-      if (text) {
-        yield text;
-      }
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      yield 'Service not available. Please contact your administrator.';
+      return;
     }
-    // console.log('Stream completed successfully');
-  } catch (error: any) {
-    console.error("Gemini Streaming Error Details:", {
-      message: error?.message,
-      status: error?.status,
-      statusText: error?.statusText,
-      stack: error?.stack,
-      error: error
-    });
 
-    // Provide more specific error messages
-    if (error?.message?.includes('API_KEY_INVALID') || error?.message?.includes('API key')) {
-      yield "Invalid API key. Please check your Gemini API key configuration.";
-    } else if (error?.message?.includes('quota') || error?.message?.includes('429')) {
-      yield "API quota exceeded. Please try again later or check your Gemini API quota.";
-    } else if (error?.message?.includes('model') || error?.message?.includes('404')) {
-      yield "Model not available. Trying alternative model...";
-      // Fallback to a different model
-      try {
-        const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
-        const resultStream = await genAI.models.generateContentStream({
-          model: 'gemini-1.5-flash',
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          config: { temperature: 0.5 }
-        });
-        for await (const chunk of resultStream) {
-          const text = chunk.text;
-          if (text) yield text;
-        }
-      } catch (fallbackError) {
-        yield "Unable to connect to AI service. Please try again later.";
+    // Get the current session token
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      yield 'Please log in to use the AI Consult feature.';
+      return;
+    }
+
+    console.log('🚀 Calling AI Consult Edge Function...');
+    console.log('📝 Query:', prompt.trim());
+    console.log('🔑 Session exists:', !!session);
+    console.log('👤 User:', session.user?.email);
+    console.log('🎫 Access token exists:', !!session.access_token);
+    
+    // Call the Supabase Edge Function with proper authorization
+    const startTime = Date.now();
+    const { data, error } = await supabase.functions.invoke('ai-consult', {
+      body: { query: prompt.trim() },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
       }
+    });
+    const duration = Date.now() - startTime;
+
+    console.log(`⏱️ Request took ${duration}ms`);
+    console.log('📦 Response data:', data);
+    console.log('❌ Response error:', error);
+
+    if (error) {
+      console.error('🔴 Edge Function Error:', error);
+      console.error('🔴 Error type:', error.name);
+      console.error('🔴 Error message:', error.message);
+      console.error('🔴 Error details:', JSON.stringify(error, null, 2));
+      
+      // Check if it's a FunctionsHttpError with context
+      if (error.context) {
+        console.error('🔴 Error context:', error.context);
+      }
+      
+      if (error.message?.includes('not found') || error.message?.includes('404')) {
+        yield 'AI Consult service is not deployed. Please run: supabase functions deploy ai-consult';
+      } else if (error.message?.includes('unauthorized') || error.message?.includes('401')) {
+        yield 'Authentication error. Please log in again.';
+      } else if (error.message?.includes('FunctionsRelayError') || error.message?.includes('FunctionsHttpError')) {
+        yield `Edge function error (${error.message}). Check browser console for details. The function may be returning an error status code.`;
+      } else {
+        yield `Error: ${error.message || 'Unable to process request'}. Check console for details.`;
+      }
+      return;
+    }
+
+    if (data?.error) {
+      console.error('🔴 API Error:', data.error);
+      if (data.hint) {
+        console.error('💡 Hint:', data.hint);
+      }
+      if (data.details) {
+        console.error('📋 Details:', data.details);
+      }
+      yield `Error: ${data.error}`;
+      if (data.hint) {
+        yield `\n\n💡 ${data.hint}`;
+      }
+      return;
+    }
+
+    // Stream the response character by character for smooth UI experience
+    const responseText = data?.response || 'No response received';
+    console.log('✅ Got response, length:', responseText.length);
+    
+    const words = responseText.split(' ');
+    
+    for (let i = 0; i < words.length; i++) {
+      yield words[i] + (i < words.length - 1 ? ' ' : '');
+      // Small delay to simulate streaming
+      await new Promise(resolve => setTimeout(resolve, 30));
+    }
+
+    console.log('✅ Stream completed successfully');
+  } catch (error: any) {
+    console.error("🔴 Medical Assistance Error:", error);
+    console.error("🔴 Error stack:", error.stack);
+    
+    if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
+      yield 'Network error. Please check your connection and try again.';
     } else {
-      yield `Error: ${error?.message || 'Unknown error occurred'}. Please check the console for details.`;
+      yield `Error: ${error?.message || 'Unknown error occurred'}. Please try again.`;
     }
   }
 }

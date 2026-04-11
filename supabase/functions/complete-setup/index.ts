@@ -33,7 +33,7 @@ serve(async (req) => {
 
     if (fetchError || !request || request.setup_token_used_at || request.status !== 'approved') {
        return new Response(JSON.stringify({ success: false, error: "Unauthorized or invalid setup session" }), {
-         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
        })
     }
 
@@ -47,7 +47,7 @@ serve(async (req) => {
 
     if (authError) {
       return new Response(JSON.stringify({ success: false, error: authError.message.includes('already exists') ? "An account with this email already exists." : authError.message }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -58,6 +58,7 @@ serve(async (req) => {
       id: userId,
       tenant_id: request.tenant_id,
       role: 'tenant_admin',
+      email: admin_email,
       display_name: admin_name,
       branch_id: null
     }])
@@ -71,7 +72,7 @@ serve(async (req) => {
         error: `User profile creation failed: ${userInsertError.message}`,
         details: userInsertError
       }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -97,7 +98,7 @@ serve(async (req) => {
         error: `Tenant record update failed: ${tenantUpdateError.message}`,
         details: tenantUpdateError
       }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -114,7 +115,7 @@ serve(async (req) => {
         error: `Request update failed: ${requestUpdateError.message}`,
         details: requestUpdateError 
       }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -132,17 +133,23 @@ serve(async (req) => {
             to: [admin_email],
             subject: "Welcome to PharmaCore — Your pharmacy is ready!",
             html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h1 style="color: #006C75;">Welcome aboard, ${admin_name}!</h1>
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+              <div style="background-color: #006C75; height: 5px; font-size: 0; line-height: 0;">&nbsp;</div>
+              <div style="padding: 32px 40px; text-align: center;">
+                <img src="https://pharmacore.365health.online/images/preview%20image.png" alt="PharmaCore by 365Health" width="280" style="max-width: 280px; height: auto;">
+              </div>
+              <div style="padding: 0 30px 30px;">
+                <h1 style="color: #0f172a; font-size: 24px; margin-bottom: 24px;">Welcome aboard, ${admin_name}!</h1>
                 <p>Your setup for <strong>${pharmacy_name}</strong> is complete. You now have full access to your PharmaCore dashboard.</p>
                 <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
                   <p><strong>Your Trial Period:</strong> 30 Days (Expires ${new Date(trialEndsAt).toLocaleDateString('en-GB')})</p>
                   <p><strong>Login URL:</strong> <a href="https://pharmacore.365health.online/login">pharmacore.365health.online/login</a></p>
                 </div>
                 <p>Need help getting started? Reply to this email or visit our help center.</p>
-                <p>Cheers,<br>The PharmaCore Team</p>
+                <p style="margin-top: 30px; font-size: 14px; color: #94a3b8; text-align: center;">Cheers,<br>The PharmaCore Team</p>
               </div>
-            `
+            </div>
+          `
           })
         })
       } catch (e) {
@@ -157,7 +164,7 @@ serve(async (req) => {
   } catch (err: any) {
     console.error('Setup completion error:', err)
     return new Response(JSON.stringify({ success: false, error: err.message || "An unexpected error occurred" }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })
