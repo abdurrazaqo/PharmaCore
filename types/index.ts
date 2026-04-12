@@ -77,7 +77,7 @@ export interface Transaction {
 export interface Product {
   id: string;
   name: string;
-  brandName?: string;
+  generic?: string;
   category: string;
   dosageForm?: string;
   strength?: string;
@@ -102,6 +102,7 @@ export enum Page {
   DOCS = 'docs',
   CUSTOMERS = 'customers',
   REPORTS = 'reports',
+  BRANCHES = 'branches',
   SETTINGS = 'settings'
 }
 

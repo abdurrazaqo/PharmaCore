@@ -54,7 +54,8 @@ export const AppSchema = new Schema({
   branches: new Table({
     tenant_id: column.text,
     name: column.text,
-    location: column.text
+    location: column.text,
+    phone: column.text
   }),
   users: new Table({
     tenant_id: column.text,

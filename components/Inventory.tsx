@@ -99,13 +99,16 @@ const Inventory: React.FC = () => {
     }
     
     try {
-      const added = await addProduct(newProduct, profile!.tenant!.id, selectedBranchId);
+      // If "All Branches" is selected, default to the first branch for writes
+      const effectiveBranchId = selectedBranchId || (branches.length > 0 ? branches[0].id : profile?.branch?.id);
+      
+      const added = await addProduct(newProduct, profile!.tenant!.id, effectiveBranchId);
       setProducts([...products, added]);
       showToast('Medicine added successfully!', 'success');
       setIsAddModalOpen(false); // Close modal after success
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding product:', error);
-      showToast('Failed to add medicine. Please try again.', 'error');
+      showToast(`Failed to add medicine: ${error.message || 'Please try again.'}`, 'error');
     }
   };
 
@@ -160,9 +163,9 @@ const Inventory: React.FC = () => {
       const updated = await updateProduct(id, updates, profile!.tenant!.id, selectedBranchId);
       setProducts(products.map(p => p.id === id ? updated : p));
       showToast('Medicine updated successfully!', 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating product:', error);
-      showToast('Failed to update medicine. Please try again.', 'error');
+      showToast(`Failed to update medicine: ${error.message || 'Please try again.'}`, 'error');
     }
   };
 
@@ -194,7 +197,7 @@ const Inventory: React.FC = () => {
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       if (!prod.name.toLowerCase().includes(search) && 
-          !(prod.brandName && prod.brandName.toLowerCase().includes(search)) &&
+          !(prod.generic && prod.generic.toLowerCase().includes(search)) &&
           !prod.batchNo.toLowerCase().includes(search)) {
         return false;
       }
@@ -221,7 +224,7 @@ const Inventory: React.FC = () => {
     }
     
     // Create CSV content
-    const headers = ['Medicine Name', 'Brand Name', 'Dosage Form', 'Strength', 'Category', 'Unit', 'Batch No', 'Barcode', 'Mfg Date', 'Expiry Date', 'Total Units', 'Cost Price (₦)', 'Selling Price (₦)', 'Stock Status'];
+    const headers = ['Brand Name', 'Item Name (Generic)', 'Dosage Form', 'Strength', 'Category', 'Unit', 'Batch No', 'Barcode', 'Mfg Date', 'Expiry Date', 'Total Units', 'Cost Price (₦)', 'Selling Price (₦)', 'Stock Status'];
     
     const rows = filteredProducts.map(prod => {
       const percentageRemaining = (prod.totalUnits / prod.lastRestockQuantity) * 100;
@@ -229,7 +232,7 @@ const Inventory: React.FC = () => {
       
       return [
         prod.name,
-        prod.brandName || 'N/A',
+        prod.generic || 'N/A',
         prod.dosageForm || 'N/A',
         prod.strength || 'N/A',
         prod.category,
@@ -311,7 +314,7 @@ const Inventory: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3">
-          {(isTenantAdmin() || isSuperAdmin()) && branches.length > 0 && (
+          {(isTenantAdmin() || isSuperAdmin()) && branches.length > 1 && (
             <div className="relative">
               <button
                 onClick={() => setShowBranchDropdown(!showBranchDropdown)}
@@ -470,15 +473,16 @@ const Inventory: React.FC = () => {
                 <tr key={prod.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                   <td className="px-2 py-2">
                     <p className="font-bold text-xs leading-tight text-slate-800 dark:text-slate-200">
-                      {prod.brandName ? (
-                        <>{prod.brandName} {prod.strength ? <span className="opacity-80 font-medium">- {prod.strength}</span> : ''}</>
-                      ) : (
-                        <>{prod.name} {prod.strength ? <span className="opacity-80 font-medium">- {prod.strength}</span> : ''}</>
-                      )}
+                      {prod.name} {prod.strength ? <span className="opacity-80 font-medium">- {prod.strength}</span> : ''}
                     </p>
                     <p className="text-[10px] text-slate-500 font-medium mt-0.5 leading-tight flex flex-wrap items-center gap-x-1">
-                      <span>{prod.name}</span> 
-                      {prod.dosageForm && <span className="text-slate-400 dark:text-slate-500">• {prod.dosageForm}</span>}
+                      {prod.generic && prod.generic !== prod.name && (
+                        <>
+                          <span className="text-primary/70">{prod.generic}</span>
+                          <span className="text-slate-400 dark:text-slate-500">•</span>
+                        </>
+                      )}
+                      {prod.dosageForm && <span className="text-slate-400 dark:text-slate-500">{prod.dosageForm}</span>}
                       <span className="sm:hidden font-bold text-emerald-600 dark:text-emerald-400 ml-auto leading-none">
                         ₦{prod.price?.toLocaleString('en-NG', { maximumFractionDigits: 0 }) || '0'}
                       </span>

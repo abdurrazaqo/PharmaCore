@@ -140,13 +140,32 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
     try {
       if (!profile?.tenant?.id) throw new Error('Tenant ID missing');
 
+      // Check if a branch already exists for this tenant
+      const { data: existingBranches, error: fetchError } = await supabase
+        .from('branches')
+        .select('id, name')
+        .eq('tenant_id', profile.tenant.id)
+        .limit(1);
+
+      if (fetchError) throw fetchError;
+
+      if (existingBranches && existingBranches.length > 0) {
+        // Skip branch creation if one already exists
+        console.log('Branch already exists, skipping creation:', existingBranches[0]);
+        setFormData(prev => ({ ...prev, createdBranchId: existingBranches[0].id }));
+        setWizardSummary(prev => ({ ...prev, branchName: existingBranches[0].name }));
+        goToNextStep();
+        return;
+      }
+
       // Create first branch
       const { data, error } = await supabase
         .from('branches')
         .insert([{
           tenant_id: profile.tenant.id,
           name: formData.branchName,
-          location: formData.branchLocation || null
+          location: formData.branchLocation || null,
+          phone: formData.pharmacyPhone || null
         }])
         .select()
         .single();

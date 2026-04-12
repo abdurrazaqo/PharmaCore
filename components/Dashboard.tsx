@@ -213,7 +213,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
            {tenantGuard.isReadOnly && <ReadOnlyBadge />}
          </div>
          
-         {(isTenantAdmin() || isSuperAdmin()) && branches.length > 0 && (
+         {(isTenantAdmin() || isSuperAdmin()) && branches.length > 1 && (
            <div className="relative">
              <button
                onClick={() => setShowBranchDropdown(!showBranchDropdown)}

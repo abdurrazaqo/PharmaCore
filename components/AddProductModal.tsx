@@ -161,8 +161,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     e.preventDefault();
 
     const productData: any = {
-      name: formData.name,
-      brandName: formData.brandName || undefined,
+      name: formData.brandName || formData.name,
+      generic: formData.name,
       category: formData.category,
       dosageForm: formData.dosageForm || undefined,
       strength: formData.strength || undefined,

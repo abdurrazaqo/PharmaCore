@@ -51,8 +51,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
   useEffect(() => {
     if (product && isOpen) {
       setFormData({
-        name: product.name,
-        brandName: product.brandName || '',
+        name: product.generic || product.name,
+        brandName: product.name === product.generic ? '' : product.name,
         category: product.category,
         dosageForm: product.dosageForm || '',
         strength: product.strength || '',
@@ -152,8 +152,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     e.preventDefault();
     
     let updates: Partial<Product> = {
-      name: formData.name,
-      brandName: formData.brandName || undefined,
+      name: formData.brandName || formData.name,
+      generic: formData.name,
       category: formData.category,
       dosageForm: formData.dosageForm || undefined,
       strength: formData.strength || undefined,

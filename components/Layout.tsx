@@ -139,6 +139,7 @@ const Layout: React.FC<LayoutProps> = ({ isAiOpen, onToggleAi, aiContent }) => {
     ...(permissions.canManageCustomers ? [{ id: Page.CUSTOMERS, label: 'Patients', icon: 'group', shortLabel: 'Patients' }] : []),
     ...(permissions.canViewReports ? [{ id: Page.REPORTS, label: 'Reports', icon: 'bar_chart', shortLabel: 'Reports' }] : []),
     ...(permissions.canManageUsers ? [{ id: 'users', label: 'User Management', icon: 'manage_accounts', shortLabel: 'Users' }] : []),
+    ...((profile?.role === 'tenant_admin' || profile?.role === 'superadmin') ? [{ id: Page.BRANCHES, label: 'Branches', icon: 'storefront', shortLabel: 'Branches' }] : []),
     ...(permissions.canManageSubscription && !tenantGuard.isDemo ? [{ id: 'subscription', label: 'Subscription', icon: 'card_membership', shortLabel: 'Plan' }] : []),
     ...(permissions.canAccessSuperadminDashboard ? [{ id: 'superadmin', label: 'Superadmin Console', icon: 'admin_panel_settings', shortLabel: 'Admin' }] : []),
   ];

@@ -8,6 +8,7 @@ import Docs from './components/Docs';
 import Customers from './components/Customers';
 import Reports from './components/Reports';
 import UserManagement from './components/UserManagement';
+import BranchManagement from './components/BranchManagement';
 import SubscriptionPage from './components/SubscriptionPage';
 import Login from './components/Login';
 import DemoPage from './pages/DemoPage';
@@ -246,6 +247,15 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute requiredRoles={[UserRole.SUPERADMIN, UserRole.TENANT_ADMIN, UserRole.BRANCH_ADMIN]}>
                       <UserManagement />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                <Route 
+                  path={`/${Page.BRANCHES}`} 
+                  element={
+                    <ProtectedRoute requiredRole={UserRole.TENANT_ADMIN}>
+                      <BranchManagement />
                     </ProtectedRoute>
                   } 
                 />

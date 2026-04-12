@@ -23,7 +23,10 @@ const POS: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState({ name: 'Walk-in Customer', initials: 'WC', phone: 'N/A' });
   const [products, setProducts] = useState<Product[]>([]);
-  const { profile } = useAuth();
+  const { profile, isTenantAdmin, isSuperAdmin } = useAuth();
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>(profile?.branch?.id);
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const tenantGuard = useTenantGuard();
   const [loading, setLoading] = useState(true);
   const [completedTransactionId, setCompletedTransactionId] = useState<string | null>(null);
@@ -65,8 +68,20 @@ const POS: React.FC = () => {
   }, [discountPercent]);
 
   useEffect(() => {
+    if (profile?.tenant?.id && (isTenantAdmin() || isSuperAdmin())) {
+      fetchBranches();
+    }
+  }, [profile?.tenant?.id]);
+
+  useEffect(() => {
     loadProducts();
-  }, []);
+  }, [selectedBranchId]);
+
+  const fetchBranches = async () => {
+    if (!profile?.tenant?.id) return;
+    const { data } = await supabase!.from('branches').select('id, name').eq('tenant_id', profile.tenant.id);
+    if (data) setBranches(data);
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -116,7 +131,7 @@ const POS: React.FC = () => {
     if (!profile?.tenant?.id) return;
     try {
       setLoading(true);
-      const data = await getProducts(profile.tenant.id, profile.branch?.id);
+      const data = await getProducts(profile.tenant.id, selectedBranchId);
       setProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -224,8 +239,11 @@ const POS: React.FC = () => {
     });
 
     try {
+      // Determine the correct branch ID for the transaction
+      const effectiveBranchId = selectedBranchId || (isTenantAdmin() || isSuperAdmin() ? branches[0]?.id : profile?.branch?.id);
+
       // Get next sequential invoice ID
-      const invoiceId = await getNextInvoiceId(profile!.tenant!.id, profile!.branch?.id);
+      const invoiceId = await getNextInvoiceId(profile!.tenant!.id, effectiveBranchId);
 
       // Calculate total before clearing cart
       const saleTotal = total;
@@ -240,7 +258,7 @@ const POS: React.FC = () => {
         status: 'Completed' as any,
         paymentMethod: paymentMethod,
         staffName: profile?.display_name || 'Staff'
-      } as any, profile!.tenant!.id, profile!.branch?.id);
+      } as any, profile!.tenant!.id, effectiveBranchId);
 
       // Save sales items
       const salesItems = cart.map(item => {
@@ -328,7 +346,7 @@ const POS: React.FC = () => {
 
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.brandName && p.brandName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (p.generic && p.generic.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (p.barcode && p.barcode.includes(searchTerm))
   ).sort((a, b) => a.name.localeCompare(b.name)); // Sort by name
 
@@ -408,14 +426,11 @@ const POS: React.FC = () => {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200 mb-0.5 leading-tight truncate">
-                          {prod.brandName ? (
-                            <>{prod.brandName} {prod.strength && <span className="opacity-80 font-medium">- {prod.strength}</span>}</>
-                          ) : (
-                            <>{prod.name} {prod.strength && <span className="opacity-80 font-medium">- {prod.strength}</span>}</>
-                          )}
+                          {prod.name} {prod.strength && <span className="opacity-80 font-medium">- {prod.strength}</span>}
                         </h4>
                         <p className="text-[10px] text-slate-500 font-medium mb-1.5 truncate">
-                          {prod.name} {prod.dosageForm && <span className="text-slate-400 dark:text-slate-500">• {prod.dosageForm}</span>}
+                          {prod.generic && prod.generic !== prod.name && <span className="text-primary/70">{prod.generic} • </span>}
+                          {prod.dosageForm && <span className="text-slate-400 dark:text-slate-500">{prod.dosageForm}</span>}
                         </p>
                         <div className="flex items-center gap-3">
                           <span className="text-primary font-bold text-base">₦{prod.price.toLocaleString('en-NG', { maximumFractionDigits: 0 })}</span>
@@ -471,11 +486,58 @@ const POS: React.FC = () => {
           )}
         </div>
 
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 gap-4">
           <h2 className="text-lg font-bold flex items-center gap-2 dark:text-white hidden lg:flex">
             <span className="material-symbols-outlined text-primary">inventory_2</span>
             Available Medicines
           </h2>
+
+          <div className="flex items-center gap-3">
+            {(isTenantAdmin() || isSuperAdmin()) && branches.length > 1 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowBranchDropdown(!showBranchDropdown)}
+                  className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-bold shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-all dark:text-white min-w-[180px] justify-between h-10"
+                >
+                  <span className="truncate">{selectedBranchId ? branches.find(b => b.id === selectedBranchId)?.name : 'All Branches'}</span>
+                  <span className="material-symbols-outlined text-[20px] text-slate-400">expand_more</span>
+                </button>
+                
+                {showBranchDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-[100]" onClick={() => setShowBranchDropdown(false)} />
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl shadow-2xl py-2 overflow-hidden border border-slate-200 dark:border-slate-700 z-[101]">
+                      <button
+                        onClick={() => { setSelectedBranchId(undefined); setShowBranchDropdown(false); }}
+                        className={`w-full text-left px-4 py-2 text-sm font-bold flex justify-between items-center transition-colors ${
+                          !selectedBranchId ? 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span>All Branches</span>
+                        {!selectedBranchId && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                      </button>
+                      {branches.map((branch) => (
+                        <button
+                          key={branch.id}
+                          onClick={() => { setSelectedBranchId(branch.id); setShowBranchDropdown(false); }}
+                          className={`w-full text-left px-4 py-2 text-sm font-bold flex justify-between items-center transition-colors ${
+                            selectedBranchId === branch.id ? 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          <span>{branch.name}</span>
+                          {selectedBranchId === branch.id && <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <div className="hidden lg:flex items-center gap-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-[10px] text-slate-500">
+              <span className="material-symbols-outlined text-sm">info</span>
+              <span>Select item to add to bill</span>
+            </div>
+          </div>
         </div>
 
         {/* Products Table - Desktop Only */}
@@ -518,14 +580,11 @@ const POS: React.FC = () => {
                       >
                         <td className="px-3 py-2">
                           <p className="font-bold text-xs text-slate-800 dark:text-slate-200 leading-tight">
-                            {prod.brandName ? (
-                              <>{prod.brandName} {prod.strength && <span className="opacity-80 font-medium">- {prod.strength}</span>}</>
-                            ) : (
-                              <>{prod.name} {prod.strength && <span className="opacity-80 font-medium">- {prod.strength}</span>}</>
-                            )}
+                            {prod.name} {prod.strength && <span className="opacity-80 font-medium">- {prod.strength}</span>}
                           </p>
                           <p className="text-[10px] text-slate-500 font-medium mt-0.5 leading-tight">
-                            {prod.name} {prod.dosageForm && <span className="text-slate-400 dark:text-slate-500">• {prod.dosageForm}</span>}
+                            {prod.generic && prod.generic !== prod.name && <span className="text-primary/70">{prod.generic} • </span>}
+                            {prod.dosageForm && <span className="text-slate-400 dark:text-slate-500">{prod.dosageForm}</span>}
                           </p>
                         </td>
                         <td className="px-2 py-2">
@@ -686,15 +745,12 @@ const POS: React.FC = () => {
                   <div key={item.id} className="group relative bg-white dark:bg-slate-800 rounded-md p-2 shadow-sm border border-slate-100 dark:border-slate-700/60 hover:border-primary/40 dark:hover:border-primary/40 transition-all hover:shadow-md flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-xs text-slate-800 dark:text-slate-100 leading-tight truncate">
-                        {prod.brandName ? (
-                          <>{prod.brandName} {prod.strength && <span className="font-medium opacity-80">- {prod.strength}</span>}</>
-                        ) : (
-                          <>{prod.name} {prod.strength && <span className="font-medium opacity-80">- {prod.strength}</span>}</>
-                        )}
+                        {prod.name} {prod.strength && <span className="font-medium opacity-80">- {prod.strength}</span>}
                       </h4>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <p className="text-[9px] text-slate-500 font-medium truncate shrink">
-                          {prod.name} {prod.dosageForm && <span>• {prod.dosageForm}</span>}
+                          {prod.generic && prod.generic !== prod.name && <span className="text-primary/70">{prod.generic} • </span>}
+                          {prod.dosageForm && <span>{prod.dosageForm}</span>}
                         </p>
                         <span className="shrink-0 text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1 py-0.5 rounded">
                           ₦{prod.price.toLocaleString('en-NG', { maximumFractionDigits: 0 })} / <span className="hidden md:inline">{prod.unit || 'Unit'}</span>
